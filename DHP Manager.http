@@ -1,0 +1,6 @@
+@DHP_Manager_HostAddress = http://localhost:5178
+
+GET {{DHP_Manager_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

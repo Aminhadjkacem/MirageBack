@@ -1,0 +1,72 @@
+# .NET Core
+bin/
+obj/
+
+# Build artifacts
+*.dll
+*.exe
+*.pdb
+*.nuget
+*.snupkg
+
+# User-specific files
+*.user
+*.suo
+*.vs
+.vscode/
+
+# Logs
+*.log
+logs/
+
+# Package directories
+packages/
+!packages/repositories.config
+
+# Visual Studio Code settings
+.vscode/
+
+# Docker & Containers
+**/[Dd]ockerfile
+**/[Dd]ocker-compose*
+**/docker-compose.override*
+.dockerignore
+
+# Kubernetes manifests
+k8s/
+*.yaml
+
+# Local environment files
+.env
+secrets.json
+
+# Database files
+*.mdf
+*.ldf
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# Coverage & testing
+*.coverage
+*.testresults/
+TestResults/
+
+# Static files
+wwwroot/
+
+# NuGet
+*.nupkg
+.nuget/
+
+# Resharper
+*_Resharper*
+
+# Terraform (if used)
+.terraform/
+*.tfstate
+
+# Other system files
+Thumbs.db
+.DS_Store
