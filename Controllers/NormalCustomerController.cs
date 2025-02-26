@@ -1,9 +1,11 @@
-using DHP_Manager.Entities;
+using DHP_Manager.Models.Details;
 using DHP_Manager.Models.DTOs;
+using DHP_Manager.Models.response;
 using DHP_Manager.Services.impl;
+using DHP_Manager.Services.Interface;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+
+
 
 namespace DHP_Manager.Controllers
 {
@@ -11,9 +13,9 @@ namespace DHP_Manager.Controllers
     [ApiController]
     public class NormalCustomerController : ControllerBase
     {
-        private readonly NormalCustomerService _service;
+        private readonly INormalCustomerService _service;
 
-        public NormalCustomerController(NormalCustomerService service)
+        public NormalCustomerController(INormalCustomerService service)
         {
             _service = service;
         }
@@ -30,37 +32,38 @@ namespace DHP_Manager.Controllers
         [HttpGet("{phone}")]
         public async Task<IActionResult> GetByPhone(string phone)
         {
-            var customer = await _service.GetByPhoneAsync(phone);
+            NormalCustomerDetails customer = await _service.GetByPhoneAsync(phone);
             if (customer == null)
                 return NotFound($"No customer found with phone number: {phone}");
 
-            return Ok(customer);
+            return Ok(NormalCustomerResponse.fromDetails(customer));
         }
 
         // Create a new customer
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] NormalCustomerDTO customerDto)
+        public async Task<IActionResult> Create([FromBody] NormalCustomerDto customerDto)
         {
             if (customerDto == null)
-                return BadRequest("Customer data is required.");
+                return null;
 
-            var createdCustomer = await _service.AddAsync(customerDto);
-            return CreatedAtAction(nameof(GetByPhone), new { phone = createdCustomer.PhoneNumber }, createdCustomer);
+            NormalCustomerDetails createdCustomer = await _service.AddAsync(customerDto.ToInput());
+            return Ok(NormalCustomerResponse.fromDetails(createdCustomer));
         }
 
         // Update customer details
-        [HttpPut("{phone}")]
-        public async Task<IActionResult> Update(string phone, [FromBody] NormalCustomerDTO customerDto)
+        [HttpPatch("{phone}")]
+        public async Task<IActionResult> Update(string phone, [FromBody] NormalCustomerDto customerDto)
         {
             if (customerDto == null)
                 return BadRequest("Customer data is required.");
 
-            var updatedCustomer = await _service.UpdateAsync(phone, customerDto);
+            NormalCustomerDetails updatedCustomer = await _service.UpdateAsync(phone, customerDto.ToInput());
             if (updatedCustomer == null)
                 return NotFound($"No customer found with phone number: {phone}");
 
             return Ok(updatedCustomer);
         }
+
 
         // Delete customer by phone number
         [HttpDelete("{phone}")]

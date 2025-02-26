@@ -1,26 +1,29 @@
-﻿using DHP_Manager.Entities;
-using DHP_Manager.Repositories.Interface;
+﻿using DHP_Manager.Repositories.Interface;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DHP_Manager.Services.Interface;
 using DHP_Manager.Models.DTOs;
+using DHP_Manager.Models.Details;
+using DHP_Manager.Models.input;
+using DHP_Manager.Models.Entities;
+using DHP_Manager.Models.Input;
 namespace DHP_Manager.Services.impl
 {
     public class NormalCustomerService:INormalCustomerService
     {
-        private readonly ICustomerRepository<NormalCustomer> _repository;
+        private readonly INormalCustomerRepository _repository;
 
-        public NormalCustomerService(ICustomerRepository<NormalCustomer> repository)
+        public NormalCustomerService(INormalCustomerRepository repository)
         {
             _repository = repository;
         }
 
         //Service must not return DTO
-        public async Task<IEnumerable<NormalCustomerDTO>> GetAllAsync()
+        public async Task<IEnumerable<NormalCustomerDetails>> GetAllAsync()
         {
             var customers = await _repository.GetAllAsync();
-            return customers.Select(c => new NormalCustomerDTO
+            return customers.Select(c => new NormalCustomerDetails
             {
                 FullName = c.FullName,
                 PhoneNumber = c.PhoneNumber,
@@ -30,53 +33,41 @@ namespace DHP_Manager.Services.impl
             });
         }
 
-        public async Task<NormalCustomerDTO> GetByPhoneAsync(string phone)
+        public async Task<NormalCustomerDetails> GetByPhoneAsync(string phone)
         {
-            var customer = await _repository.GetByUniqueIdentifierAsync(phone);
+            NormalCustomer customer = await _repository.GetByPhoneNumberAsync(phone);
             if (customer == null) return null;
 
-            return new NormalCustomerDTO
-            {
-                FullName = customer.FullName,
-                PhoneNumber = customer.PhoneNumber,
-                Address = customer.Address,
-                Email = customer.Email,
-                CIN = customer.CIN
-            };
+            return NormalCustomerDetails.fromEntity(customer);
         }
 
-        public async Task<NormalCustomerDTO> AddAsync(NormalCustomerDTO dto)
+        public async Task<NormalCustomerDetails> AddAsync(NormalCustomerInput dto)
         {
-            var customer = new NormalCustomer
-            {
-                FullName = dto.FullName,
-                PhoneNumber = dto.PhoneNumber,
-                Address = dto.Address,
-                Email = dto.Email,
-                CIN = dto.CIN
-            };
-
-            await _repository.AddAsync(customer);
-            return dto;
+            NormalCustomer customer = await _repository.AddAsync(dto.ToEntity());
+            NormalCustomerDetails customerDetails = NormalCustomerDetails.fromEntity(customer);
+            return customerDetails;
         }
 
-        public async Task<NormalCustomerDTO> UpdateAsync(string phone, NormalCustomerDTO dto)
+        public async Task<NormalCustomerDetails> UpdateAsync(string phone, NormalCustomerInput dto)
         {
-            var existingCustomer = await _repository.GetByUniqueIdentifierAsync(phone);
+            NormalCustomer existingCustomer = await _repository.GetByPhoneNumberAsync(phone);
             if (existingCustomer == null) return null;
-
+            Console.WriteLine("Existing Customer: " + existingCustomer.FullName);
             existingCustomer.FullName = dto.FullName;
             existingCustomer.Address = dto.Address;
             existingCustomer.Email = dto.Email;
+            existingCustomer.PhoneNumber = dto.PhoneNumber;
             existingCustomer.CIN = dto.CIN;
 
-            await _repository.UpdateAsync(existingCustomer);
-            return dto;
+            NormalCustomer customer = await _repository.UpdateAsync(phone ,existingCustomer);
+            NormalCustomerDetails customerDetails = NormalCustomerDetails.fromEntity(customer);
+
+            return (customerDetails);
         }
 
         public async Task<bool> DeleteAsync(string phone)
         {
-            var existingCustomer = await _repository.GetByUniqueIdentifierAsync(phone);
+            var existingCustomer = await _repository.GetByPhoneNumberAsync(phone);
             if (existingCustomer == null) return false;
 
             await _repository.DeleteAsync(existingCustomer.Id);

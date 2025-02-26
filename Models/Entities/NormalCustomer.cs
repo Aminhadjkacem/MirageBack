@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace DHP_Manager.Entities
+namespace DHP_Manager.Models.Entities
 {
     public class NormalCustomer
     {

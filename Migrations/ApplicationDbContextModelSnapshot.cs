@@ -21,7 +21,7 @@ namespace DHP_Manager.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("DHP_Manager.Entities.CompanyCustomer", b =>
+            modelBuilder.Entity("DHP_Manager.Models.Entities.CompanyCustomer", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -81,7 +81,7 @@ namespace DHP_Manager.Migrations
                     b.ToTable("CompanyCustomers");
                 });
 
-            modelBuilder.Entity("DHP_Manager.Entities.NormalCustomer", b =>
+            modelBuilder.Entity("DHP_Manager.Models.Entities.NormalCustomer", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

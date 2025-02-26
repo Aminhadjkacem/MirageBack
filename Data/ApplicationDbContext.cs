@@ -1,4 +1,4 @@
-﻿using DHP_Manager.Entities;
+﻿using DHP_Manager.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace DHP_Manager.Data

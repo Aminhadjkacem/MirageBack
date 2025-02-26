@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace DHP_Manager.Entities
+namespace DHP_Manager.Models.Entities
 {
     public class CompanyCustomer
     {
@@ -17,8 +17,11 @@ namespace DHP_Manager.Entities
 
         [Required]
         public string MatriculeFiscal { get; set; }
-
+        
+        [Required]
         public string Contact1Name { get; set; }
+        [Required]
+
         public string Contact1Phone { get; set; }
 
         public string Contact2Name { get; set; }
