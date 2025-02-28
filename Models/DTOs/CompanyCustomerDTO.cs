@@ -28,10 +28,10 @@ namespace DHP_Manager.Models.DTOs
                 MatriculeFiscal = Dto.MatriculeFiscal,
                 Contact1Name = Dto.Contact1Name,
                 Contact1Phone = Dto.Contact1Phone,
-                Contact2Name = Dto.Contact1Name,
-                Contact2Phone = Dto.Contact1Phone,
-                Contact3Name = Dto.Contact1Name,
-                Contact3Phone = Dto.Contact1Phone
+                Contact2Name = Dto.Contact2Name,
+                Contact2Phone = Dto.Contact2Phone,
+                Contact3Name = Dto.Contact3Name,
+                Contact3Phone = Dto.Contact3Phone
             };
         }
     }
