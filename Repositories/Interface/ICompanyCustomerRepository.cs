@@ -7,9 +7,9 @@ namespace DHP_Manager.Repositories.Interface
     public interface ICompanyCustomerRepository
     {
         Task<IEnumerable<CompanyCustomer>> GetAllAsync();
-        Task<CompanyCustomer> GetByUniqueIdentifierAsync(string identifier);
+        Task<CompanyCustomer> GetByMatriculeFiscalAsync(string matriculeFiscal);
         Task<CompanyCustomer> AddAsync(CompanyCustomer customer);
         Task<CompanyCustomer> UpdateAsync(CompanyCustomer customer);
-        Task DeleteAsync(int id);
+        Task DeleteAsync(string matriculeFiscal);
     }
 }

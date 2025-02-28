@@ -1,13 +1,15 @@
 ﻿using DHP_Manager.Entities;
+using DHP_Manager.Models.Details;
 using DHP_Manager.Models.DTOs;
+using DHP_Manager.Models.input;
+using DHP_Manager.Models.response;
 
 namespace DHP_Manager.Services.Interface
 {
     public interface IUserService
     {
-        Task<AuthenticateResponse?> Authenticate(AuthenticationDTO dto);
-        Task<User> CreateUserAsync(CreateUserDTO dto);
-        IEnumerable<User> GetAll();
-        User? GetById(int id);
+        Task<UserDetails?> Authenticate(AuthenticationDTO dto);
+        Task<UserDetails> CreateUserAsync(UserInput input);
+        UserDetails? GetById(int id);
     }
 }

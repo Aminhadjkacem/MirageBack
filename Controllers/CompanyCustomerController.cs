@@ -46,10 +46,10 @@ namespace DHP_Manager.Controllers
             return Ok(updatedCustomer);
         }
 
-        [HttpDelete("{id}")]
-        public async Task<ActionResult> Delete(int id)
+        [HttpDelete("{matriculeFiscal}")]
+        public async Task<ActionResult> Delete(string matriculeFiscal)
         {
-            var deleted = await _service.DeleteAsync(id);
+            var deleted = await _service.DeleteAsync(matriculeFiscal);
             if (!deleted) return NotFound("Customer not found.");
             return NoContent();
         }

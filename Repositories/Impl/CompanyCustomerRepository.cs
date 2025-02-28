@@ -19,10 +19,10 @@ namespace DHP_Manager.Repositories.Impl
             return await _context.CompanyCustomers.ToListAsync();
         }
 
-        public async Task<CompanyCustomer> GetByUniqueIdentifierAsync(string identifier)
+        public async Task<CompanyCustomer> GetByMatriculeFiscalAsync(string matriculeFiscal)
         {
             return await _context.CompanyCustomers
-                                 .FirstOrDefaultAsync(c => c.MatriculeFiscal == identifier);
+                                 .FirstOrDefaultAsync(c => c.MatriculeFiscal == matriculeFiscal);
         }
         public async Task<CompanyCustomer> AddAsync(CompanyCustomer customer)
         {
@@ -41,9 +41,9 @@ namespace DHP_Manager.Repositories.Impl
             return customer;
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(string matriculeFiscal)
         {
-            var customer = await _context.CompanyCustomers.FindAsync(id);
+            var customer = await GetByMatriculeFiscalAsync(matriculeFiscal);
             if (customer != null)
             {
                 _context.CompanyCustomers.Remove(customer);
