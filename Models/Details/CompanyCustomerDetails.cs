@@ -30,10 +30,10 @@ namespace DHP_Manager.Models.Details
                 MatriculeFiscal = entity.MatriculeFiscal,
                 Contact1Name = entity.Contact1Name,
                 Contact1Phone = entity.Contact1Phone,
-                Contact2Name = entity.Contact1Name,
-                Contact2Phone = entity.Contact1Phone,
-                Contact3Name = entity.Contact1Name,
-                Contact3Phone = entity.Contact1Phone
+                Contact2Name = entity.Contact2Name,
+                Contact2Phone = entity.Contact2Phone,
+                Contact3Name = entity.Contact3Name,
+                Contact3Phone = entity.Contact3Phone
             };
         }
     }
