@@ -21,7 +21,7 @@ namespace DHP_Manager.Controllers
 
         [AllowAnonymous]
         [HttpPost("authenticate")]
-        public async Task<IActionResult> Authenticate(AuthenticationDTO authenticationDTO)
+        public async Task<ActionResult<AuthenticateResponse>> Authenticate(AuthenticationDTO authenticationDTO)
         {
             UserDetails? response = await _userService.Authenticate(authenticationDTO);
             if (response == null)
@@ -31,7 +31,7 @@ namespace DHP_Manager.Controllers
 
         [AllowAnonymous]
         [HttpPost("register")]
-        public async Task<IActionResult> Register(CreateUserDTO createUserDTO)
+        public async Task<ActionResult<AuthenticateResponse>> Register(CreateUserDTO createUserDTO)
         {
             try
             {
