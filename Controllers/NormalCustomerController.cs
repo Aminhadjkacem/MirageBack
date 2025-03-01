@@ -1,8 +1,8 @@
 using DHP_Manager.Models.Details;
 using DHP_Manager.Models.DTOs;
 using DHP_Manager.Models.response;
-using DHP_Manager.Services.impl;
 using DHP_Manager.Services.Interface;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 
@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace DHP_Manager.Controllers
 {
     [Route("api/[controller]")]
+    //[Authorize]
     [ApiController]
     public class NormalCustomerController : ControllerBase
     {
@@ -22,26 +23,26 @@ namespace DHP_Manager.Controllers
 
         // Get all customers
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<ActionResult<IEnumerable<NormalCustomerResponse>>> GetAll()
         {
             var customers = await _service.GetAllAsync();
-            return Ok(customers);
+            return Ok(customers.Select(c => NormalCustomerResponse.fromDetails(c)));
         }
 
         // Get customer by phone number
         [HttpGet("{phone}")]
-        public async Task<IActionResult> GetByPhone(string phone)
+        public async Task<ActionResult<NormalCustomerResponse>> GetByPhone(string phone)
         {
             NormalCustomerDetails customer = await _service.GetByPhoneAsync(phone);
             if (customer == null)
-                return NotFound($"No customer found with phone number: {phone}");
+                return BadRequest(new { message = $"No customer found with phone number: {phone}" });
 
             return Ok(NormalCustomerResponse.fromDetails(customer));
         }
 
         // Create a new customer
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] NormalCustomerDto customerDto)
+        public async Task<ActionResult<NormalCustomerResponse>> Create([FromBody] NormalCustomerDto customerDto)
         {
             if (customerDto == null)
                 return null;
@@ -52,7 +53,7 @@ namespace DHP_Manager.Controllers
 
         // Update customer details
         [HttpPatch("{phone}")]
-        public async Task<IActionResult> Update(string phone, [FromBody] NormalCustomerDto customerDto)
+        public async Task<ActionResult<NormalCustomerResponse>> Update(string phone, [FromBody] NormalCustomerDto customerDto)
         {
             if (customerDto == null)
                 return BadRequest("Customer data is required.");
@@ -61,7 +62,7 @@ namespace DHP_Manager.Controllers
             if (updatedCustomer == null)
                 return NotFound($"No customer found with phone number: {phone}");
 
-            return Ok(updatedCustomer);
+            return Ok(NormalCustomerResponse.fromDetails(updatedCustomer));
         }
 
 
