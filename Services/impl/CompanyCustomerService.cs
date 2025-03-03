@@ -28,7 +28,7 @@ namespace DHP_Manager.Services.impl
 
         public async Task<CompanyCustomerDetails> GetByMatriculeFiscalAsync(string matriculeFiscal)
         {
-            CompanyCustomer companyCustomer = await _repository.GetByUniqueIdentifierAsync(matriculeFiscal);
+            CompanyCustomer companyCustomer = await _repository.GetByMatriculeFiscalAsync(matriculeFiscal);
             return CompanyCustomerDetails.fromEntity(companyCustomer);
         }
 
@@ -41,7 +41,7 @@ namespace DHP_Manager.Services.impl
 
         public async Task<CompanyCustomerDetails> UpdateAsync(string matriculeFiscal, CompanyCustomerInput customer)
         {
-            CompanyCustomer existingCustomer = await _repository.GetByUniqueIdentifierAsync(matriculeFiscal);
+            CompanyCustomer existingCustomer = await _repository.GetByMatriculeFiscalAsync(matriculeFiscal);
             if (existingCustomer == null) return null;
 
             existingCustomer.CompanyName = customer.CompanyName;
@@ -61,12 +61,12 @@ namespace DHP_Manager.Services.impl
             return companyCustomerDetails;
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(string matriculeFiscal)
         {
-            var existingCustomer = await _repository.GetByUniqueIdentifierAsync(id.ToString());
+            var existingCustomer = await _repository.GetByMatriculeFiscalAsync(matriculeFiscal);
             if (existingCustomer == null) return false;
 
-            await _repository.DeleteAsync(id);
+            await _repository.DeleteAsync(matriculeFiscal);
             return true;
         }
     }

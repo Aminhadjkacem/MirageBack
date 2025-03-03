@@ -12,6 +12,6 @@ namespace DHP_Manager.Services.Interface
         Task<CompanyCustomerDetails> GetByMatriculeFiscalAsync(string matriculeFiscal);
         Task<CompanyCustomerDetails> AddAsync(CompanyCustomerInput customer);
         Task<CompanyCustomerDetails> UpdateAsync(string matriculeFiscal, CompanyCustomerInput customer);
-        Task<bool> DeleteAsync(int id);
+        Task<bool> DeleteAsync(string matriculeFiscal);
     }
 }
