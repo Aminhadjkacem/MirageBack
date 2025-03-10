@@ -11,6 +11,7 @@ namespace DHP_Manager.Data
         public DbSet<NormalCustomer> NormalCustomers { get; set; }
         public DbSet<CompanyCustomer> CompanyCustomers { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<Product> Products { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -24,6 +25,10 @@ namespace DHP_Manager.Data
 
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Username)
+                .IsUnique();
+            
+            modelBuilder.Entity<Product>()
+                .HasIndex(u => u.Name)
                 .IsUnique();
         }
     }
