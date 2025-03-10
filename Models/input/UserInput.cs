@@ -7,7 +7,7 @@ namespace DHP_Manager.Models.input
     {
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
-        public string Username { get; set; } = string.Empty;
+        public string mail { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
 
         public static User toEntity(UserInput input)
@@ -16,7 +16,7 @@ namespace DHP_Manager.Models.input
             {
                 FirstName = input.FirstName,
                 LastName = input.LastName,
-                Username = input.Username,
+                mail = input.mail,
                 Password = PasswordHelper.HashPassword(input.Password)
             };
         }

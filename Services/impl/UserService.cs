@@ -49,7 +49,7 @@ namespace DHP_Manager.Services.Impl
         public async Task<UserDetails> CreateUserAsync(UserInput userInput)
         {
             // Check if a user with the same username already exists.
-            User? existingUser = await _userRepository.GetByUsernameAsync(userInput.Username);
+            User? existingUser = await _userRepository.GetByUsernameAsync(userInput.mail);
             if (existingUser != null)
                 throw new Exception("Username already exists");
             User createdUser = await _userRepository.CreateUserAsync(UserInput.toEntity(userInput));

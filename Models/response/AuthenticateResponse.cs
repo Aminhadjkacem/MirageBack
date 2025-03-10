@@ -8,7 +8,7 @@ namespace DHP_Manager.Models.response
         public int Id { get; set; }
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
-        public string? Username { get; set; }
+        public string? mail { get; set; }
         public string Token { get; set; }
 
         public static AuthenticateResponse fromDetails(UserDetails user)
@@ -18,7 +18,7 @@ namespace DHP_Manager.Models.response
                 Id = user.Id,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                Username = user.Username,
+                mail = user.mail,
                 Token = user.Token,
             };
         }

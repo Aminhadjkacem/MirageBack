@@ -19,9 +19,9 @@ namespace DHP_Manager.Repositories.Impl
             return await _context.Users.FindAsync(id);
         }
 
-        public async Task<User?> GetByUsernameAsync(string username)
+        public async Task<User?> GetByUsernameAsync(string mail)
         {
-            return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            return await _context.Users.FirstOrDefaultAsync(u => u.mail == mail);
         }
 
         public async Task<IEnumerable<User>> GetAllAsync()

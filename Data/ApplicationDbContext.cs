@@ -24,7 +24,7 @@ namespace DHP_Manager.Data
                 .IsUnique();
 
             modelBuilder.Entity<User>()
-                .HasIndex(u => u.Username)
+                .HasIndex(u => u.mail)
                 .IsUnique();
             
             modelBuilder.Entity<Product>()
