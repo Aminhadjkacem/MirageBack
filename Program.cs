@@ -43,6 +43,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ICompanyCustomerRepository, CompanyCustomerRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<INormalCustomerRepository, NormalCustomerRepository>();
 builder.Services.AddScoped<INormalCustomerService, NormalCustomerService>();
 builder.Services.AddScoped<ICompanyCustomerService, CompanyCustomerService>();
