@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
 
 namespace DHP_Manager.Models.Entities
 {
@@ -25,5 +26,8 @@ namespace DHP_Manager.Models.Entities
         [Required]
         [StringLength(50)]
         public required string Category { get; set; }
+
+        // ✅ Added Navigation Property for Many-to-Many Relationship
+        public List<QuotationProduct> QuotationProducts { get; set; } = new();
     }
 }

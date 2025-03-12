@@ -91,6 +91,30 @@ namespace DHP_Manager.Services.impl
             await _productRepository.UpdateAsync(existingProduct);
         }
 
+        public async Task PatchProductAsync(int id, ProductInput productPatchDto)
+        {
+            if (productPatchDto == null)
+                throw new ArgumentNullException(nameof(productPatchDto));
+
+            var existingProduct = await _productRepository.GetByIdAsync(id);
+            if (existingProduct == null)
+                throw new KeyNotFoundException("Product not found.");
+
+            // Update only the fields that are provided in the patch DTO
+            if (!string.IsNullOrEmpty(productPatchDto.Name))
+                existingProduct.Name = productPatchDto.Name;
+            if (productPatchDto.Description != null) // Nullable string, so null check is fine
+                existingProduct.Description = productPatchDto.Description;
+            if (productPatchDto.Price != default) // Check if Price has been explicitly set
+                existingProduct.Price = productPatchDto.Price;
+            if (productPatchDto.Stock != default) // Check if Stock has been explicitly set
+                existingProduct.Stock = productPatchDto.Stock;
+            if (!string.IsNullOrEmpty(productPatchDto.Category))
+                existingProduct.Category = productPatchDto.Category;
+
+            await _productRepository.UpdateAsync(existingProduct);
+        }
+
         // Method to delete a product by ID
         public async Task DeleteProductAsync(int id)
         {

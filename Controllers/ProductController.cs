@@ -95,6 +95,29 @@ namespace DHP_Manager.Controllers
             return Ok();
         }
 
+        [HttpPatch("{id}")]
+        public async Task<ActionResult> PatchProduct(int id, [FromBody] ProductDto productPatchDto)
+        {
+            if (productPatchDto == null || !ModelState.IsValid)
+            {
+                return BadRequest(new { message = "Invalid product data" });
+            }
+
+            try
+            {
+                await _productService.PatchProductAsync(id, ProductDto.ToInput(productPatchDto));
+                return Ok();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while updating the product", details = ex.Message });
+            }
+        }
+
         // DELETE: api/Product/{id}
         [HttpDelete("{id}")]
         public async Task<ActionResult<ProductResponse>> DeleteProduct(int id)
