@@ -11,6 +11,7 @@ namespace DHP_Manager.Services.Interface
         Task<ProductDetail> GetProductByNameAsync(string name);
         Task AddProductAsync(ProductInput productInput);
         Task UpdateProductAsync(int id, ProductInput productInput);
+        Task PatchProductAsync(int id, ProductInput productPatchDto);
         Task DeleteProductAsync(int id);
     }
 }
