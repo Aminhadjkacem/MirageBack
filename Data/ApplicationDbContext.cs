@@ -13,7 +13,8 @@ namespace DHP_Manager.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Product> Products { get; set; }
         public DbSet<Quotation> Quotations { get; set; }
-        public DbSet<QuotationProduct> QuotationProducts { get; set; }
+        public DbSet<Designation> Designations { get; set; }
+        public DbSet<DesignationProduct> DesignationProducts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -33,23 +34,37 @@ namespace DHP_Manager.Data
                 .HasIndex(u => u.Name)
                 .IsUnique();
 
+            // Quotation-Designation relationship (One-to-Many)
             modelBuilder.Entity<Quotation>()
-                .HasIndex(u => u.Designation)
-                .IsUnique();
+                .HasMany(q => q.Designations)
+                .WithOne(d => d.Quotation)
+                .HasForeignKey(d => d.QuotationId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            // Define Many-to-Many Relationship for Quotation and Product
-            modelBuilder.Entity<QuotationProduct>()
-                .HasOne(qp => qp.Quotation)
-                .WithMany(q => q.QuotationProducts)
-                .HasForeignKey(qp => qp.QuotationId)
-                .OnDelete(DeleteBehavior.Cascade); // Ensures cascading delete when a quotation is removed
+            // Designation-Product relationship (Many-to-Many via DesignationProduct)
+            modelBuilder.Entity<DesignationProduct>()
+                .HasKey(dp => new { dp.DesignationId, dp.ProductId });
 
-            modelBuilder.Entity<QuotationProduct>()
-    .HasOne(qp => qp.Product)
-    .WithMany(p => p.QuotationProducts) // ✅ Ajoute la navigation inverse
-    .HasForeignKey(qp => qp.ProductId)
-    .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<DesignationProduct>()
+                .HasOne(dp => dp.Designation)
+                .WithMany(d => d.DesignationProducts)
+                .HasForeignKey(dp => dp.DesignationId)
+                .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<DesignationProduct>()
+                .HasOne(dp => dp.Product)
+                .WithMany(p => p.DesignationProducts)
+                .HasForeignKey(dp => dp.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Updated default values for PostgreSQL
+            modelBuilder.Entity<Quotation>()
+                .Property(q => q.CreatedAt)
+                .HasDefaultValueSql("NOW()"); // PostgreSQL function for current UTC timestamp
+
+            modelBuilder.Entity<Designation>()
+                .Property(d => d.CreatedAt)
+                .HasDefaultValueSql("NOW()"); // PostgreSQL function for current UTC timestamp
         }
     }
 }

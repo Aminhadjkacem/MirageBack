@@ -1,23 +1,27 @@
 ﻿using DHP_Manager.Models.Entities;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace DHP_Manager.Models.Details
 {
-    public class QuotationDetails
+    public class QuotationDetail
     {
         public int Id { get; set; }
-        public string Designation { get; set; }
-        public string ProjectName { get; set; }
-        public List<QuotationProductDetails> QuotationProducts { get; set; } = new();
+        public required string ProjectName { get; set; }
+        public DateTime CreatedAt { get; set; }
 
-        // Converts from entity to details model
-        public static QuotationDetails FromEntity(Quotation entity)
+        // ✅ List of designations in this quotation
+        public List<DesignationDetail> Designations { get; set; } = new();
+        public decimal TotalPrice { get; set; }
+
+        public static QuotationDetail FromEntity(Quotation entity)
         {
-            return new QuotationDetails
+            return new QuotationDetail
             {
                 Id = entity.Id,
-                Designation = entity.Designation,
                 ProjectName = entity.ProjectName,
-                QuotationProducts = entity.QuotationProducts.Select(qp => QuotationProductDetails.FromEntity(qp)).ToList()
+                CreatedAt = entity.CreatedAt,
+                Designations = entity.Designations.Select(DesignationDetail.FromEntity).ToList()
             };
         }
     }

@@ -1,63 +1,137 @@
-﻿using DHP_Manager.Models.DTOs;
-using DHP_Manager.Models.Details;
-using DHP_Manager.Models.Entities;
-using DHP_Manager.Models.input;
+﻿using DHP_Manager.Models.Entities;
 using DHP_Manager.Models.Input;
-using DHP_Manager.Repositories.Interfaces;
-using DHP_Manager.Services.Interfaces;
+using DHP_Manager.Models.response;
+using DHP_Manager.Repositories.Interface;
+using DHP_Manager.Services.Interface;
 
-namespace DHP_Manager.Services
+namespace DHP_Manager.Services.impl
 {
     public class QuotationService : IQuotationService
     {
         private readonly IQuotationRepository _quotationRepository;
+        private readonly IDesignationRepository _designationRepository;
+        private readonly IProductRepository _productRepository;
 
-        public QuotationService(IQuotationRepository quotationRepository)
+        public QuotationService(
+            IQuotationRepository quotationRepository,
+            IDesignationRepository designationRepository,
+            IProductRepository productRepository)
         {
             _quotationRepository = quotationRepository;
+            _designationRepository = designationRepository;
+            _productRepository = productRepository;
         }
 
-        public async Task<IEnumerable<QuotationDetails>> GetAllQuotationsAsync()
+        public async Task<QuotationResponse> CreateQuotationAsync(QuotationInput quotationInput)
         {
-            var quotations = await _quotationRepository.GetAllAsync();
-            return quotations.Select(q => QuotationDetails.FromEntity(q)).ToList();
-        }
+            if (string.IsNullOrWhiteSpace(quotationInput.ProjectName))
+                throw new ArgumentException("Project name cannot be empty", nameof(quotationInput.ProjectName));
 
-        public async Task<QuotationDetails?> GetQuotationByIdAsync(int id)
-        {
-            var quotation = await _quotationRepository.GetByIdAsync(id);
-            return quotation == null ? null : QuotationDetails.FromEntity(quotation);
-        }
-
-        public async Task<QuotationDetails> CreateQuotationAsync(QuotationInput quotationInput)
-        {
-            var quotationEntity = QuotationInput.ToEntity(quotationInput); // Mapping from input to entity
-            var createdQuotation = await _quotationRepository.AddAsync(quotationEntity);
-
-            return QuotationDetails.FromEntity(createdQuotation); // Mapping from entity to details
-        }
-
-        public async Task<QuotationDetails> UpdateQuotationAsync(int id, QuotationInput quotationInput)
-        {
-            var existingQuotation = await _quotationRepository.GetByIdAsync(id);
-            if (existingQuotation == null)
+            var quotation = new Quotation
             {
-                throw new ArgumentException("Quotation not found.");
+                ProjectName = quotationInput.ProjectName,
+                Designations = new List<Designation>()
+            };
+
+            await _quotationRepository.AddAsync(quotation);
+
+            foreach (var designationInput in quotationInput.Designations)
+            {
+                var designation = new Designation
+                {
+                    Name = designationInput.Name,
+                    QuotationId = quotation.Id,
+                    DesignationProducts = new List<DesignationProduct>()
+                };
+
+                foreach (var productInput in designationInput.Products)
+                {
+                    var product = await _productRepository.GetByIdAsync(productInput.ProductId);
+                    if (product == null)
+                        throw new KeyNotFoundException($"Product with ID {productInput.ProductId} not found.");
+
+                    designation.DesignationProducts.Add(new DesignationProduct
+                    {
+                        ProductId = productInput.ProductId,
+                        Quantity = productInput.Quantity
+                    });
+                }
+
+                await _designationRepository.AddAsync(designation);
             }
 
-            // Update fields of the existing entity based on the input
-            existingQuotation.Designation = quotationInput.Designation;
-            existingQuotation.ProjectName = quotationInput.ProjectName;
-            existingQuotation.QuotationProducts = quotationInput.QuotationProducts.Select(qp => QuotationProductInput.ToEntity(qp)).ToList();
-
-            var updatedQuotation = await _quotationRepository.UpdateAsync(existingQuotation);
-
-            return QuotationDetails.FromEntity(updatedQuotation); // Mapping from entity to details
+            var createdQuotation = await _quotationRepository.GetQuotationWithDesignationsAsync(quotation.Id);
+            return MapToResponse(createdQuotation);
         }
 
-        public async Task<bool> DeleteQuotationAsync(int id)
+        public async Task<Quotation> GetQuotationAsync(int id)
         {
-            return await _quotationRepository.DeleteAsync(id);
+            return await _quotationRepository.GetByIdAsync(id);
+        }
+
+        public async Task<IEnumerable<QuotationResponse>> GetAllQuotationsAsync()
+        {
+            var quotations = await _quotationRepository.GetAllAsync();
+            return quotations.Select(MapToResponse);
+        }
+
+        public async Task<QuotationResponse> GetQuotationWithDesignationsAsync(int id)
+        {
+            var quotation = await _quotationRepository.GetQuotationWithDesignationsAsync(id);
+            return MapToResponse(quotation);
+        }
+
+        public async Task UpdateQuotationAsync(Quotation quotation)
+        {
+            if (quotation == null)
+                throw new ArgumentNullException(nameof(quotation));
+
+            await _quotationRepository.UpdateAsync(quotation);
+        }
+
+        public async Task DeleteQuotationAsync(int id)
+        {
+            await _quotationRepository.DeleteAsync(id);
+        }
+
+        public async Task AddDesignationToQuotationAsync(int quotationId, string designationName)
+        {
+            if (string.IsNullOrWhiteSpace(designationName))
+                throw new ArgumentException("Designation name cannot be empty", nameof(designationName));
+
+            var quotation = await _quotationRepository.GetByIdAsync(quotationId);
+            var designation = new Designation
+            {
+                Name = designationName,
+                QuotationId = quotationId,
+                DesignationProducts = new List<DesignationProduct>()
+            };
+
+            await _designationRepository.AddAsync(designation);
+        }
+
+        private QuotationResponse MapToResponse(Quotation quotation)
+        {
+            if (quotation == null)
+                throw new ArgumentNullException(nameof(quotation));
+
+            return new QuotationResponse
+            {
+                Id = quotation.Id,
+                ProjectName = quotation.ProjectName,
+                CreatedAt = quotation.CreatedAt,
+                Designations = quotation.Designations.Select(d => new DesignationResponse
+                {
+                    Id = d.Id,
+                    Name = d.Name,
+                    Products = d.DesignationProducts.Select(dp => new ProductQuantityResponse
+                    {
+                        ProductId = dp.ProductId,
+                        ProductName = dp.Product?.Name ?? "Unknown",
+                        Quantity = dp.Quantity
+                    }).ToList()
+                }).ToList()
+            };
         }
     }
 }

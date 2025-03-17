@@ -1,16 +1,16 @@
 ﻿using DHP_Manager.Models.Entities;
 
-namespace DHP_Manager.Models.input
+namespace DHP_Manager.Models.Input
 {
-    public class QuotationProductInput
+    public class DesignationProductInput
     {
         public int ProductId { get; set; }
         public int Quantity { get; set; }
 
-        // Converts input to the QuotationProduct entity
-        public static QuotationProduct ToEntity(QuotationProductInput input)
+        // Convert to Entity
+        public static DesignationProduct ToEntity(DesignationProductInput input)
         {
-            return new QuotationProduct
+            return new DesignationProduct
             {
                 ProductId = input.ProductId,
                 Quantity = input.Quantity
