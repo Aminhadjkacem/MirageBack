@@ -28,6 +28,6 @@ namespace DHP_Manager.Models.Entities
         public required string Category { get; set; }
 
         // ✅ Added Navigation Property for Many-to-Many Relationship
-        public List<QuotationProduct> QuotationProducts { get; set; } = new();
+        public List<DesignationProduct> DesignationProducts { get; set; } = new();
     }
 }

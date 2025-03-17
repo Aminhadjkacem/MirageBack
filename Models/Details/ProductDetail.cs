@@ -8,5 +8,6 @@
         public required decimal Price { get; set; }
         public required int Stock { get; set; }
         public required string Category { get; set; }
+        public List<string> Designations { get; set; } = new(); // Added to store designation names
     }
 }

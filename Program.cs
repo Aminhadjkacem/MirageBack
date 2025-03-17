@@ -12,10 +12,6 @@ using DHP_Manager.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using DHP_Manager.Repositories.Interfaces;
-using DHP_Manager.Repositories;
-using DHP_Manager.Services.Interfaces;
-using DHP_Manager.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 var key = Encoding.ASCII.GetBytes(builder.Configuration["AppSettings:Secret"]);
@@ -54,6 +50,8 @@ builder.Services.AddScoped<INormalCustomerService, NormalCustomerService>();
 builder.Services.AddScoped<ICompanyCustomerService, CompanyCustomerService>();
 builder.Services.AddScoped<IQuotationRepository, QuotationRepository>();
 builder.Services.AddScoped<IQuotationService, QuotationService>();
+builder.Services.AddScoped<IDesignationRepository, DesignationRepository>();
+builder.Services.AddScoped<IDesignationService, DesignationService>();
 
 builder.Services.AddCors(options =>
 {

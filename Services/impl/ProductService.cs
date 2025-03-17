@@ -1,21 +1,27 @@
-﻿using DHP_Manager.Models.Details;
+﻿using DHP_Manager.Helpers.Exceptions;
+using DHP_Manager.Models.Details;
 using DHP_Manager.Models.Entities;
 using DHP_Manager.Models.input;
+using DHP_Manager.Models.Input; // Changed to match updated namespace
 using DHP_Manager.Repositories.Interface;
 using DHP_Manager.Services.Interface;
+using Microsoft.EntityFrameworkCore;
 
-namespace DHP_Manager.Services.impl
+namespace DHP_Manager.Services.Impl // Changed 'impl' to 'Impl' to follow C# conventions
 {
     public class ProductService : IProductService
     {
         private readonly IProductRepository _productRepository;
+        private readonly IDesignationRepository _designationRepository; // Added for designation operations
 
-        public ProductService(IProductRepository productRepository)
+        public ProductService(
+            IProductRepository productRepository,
+            IDesignationRepository designationRepository)
         {
             _productRepository = productRepository;
+            _designationRepository = designationRepository;
         }
 
-        // Method to fetch all products and return as ProductDetail
         public async Task<IEnumerable<ProductDetail>> GetAllProductsAsync()
         {
             var products = await _productRepository.GetAllAsync();
@@ -26,11 +32,11 @@ namespace DHP_Manager.Services.impl
                 Description = p.Description,
                 Price = p.Price,
                 Stock = p.Stock,
-                Category = p.Category
+                Category = p.Category,
+                Designations = p.DesignationProducts.Select(dp => dp.Designation.Name).ToList() // Include designation names
             });
         }
 
-        // Method to get a product by ID and return it as ProductDetail
         public async Task<ProductDetail> GetProductByIdAsync(int id)
         {
             var product = await _productRepository.GetByIdAsync(id);
@@ -44,11 +50,11 @@ namespace DHP_Manager.Services.impl
                 Description = product.Description,
                 Price = product.Price,
                 Stock = product.Stock,
-                Category = product.Category
+                Category = product.Category,
+                Designations = product.DesignationProducts.Select(dp => dp.Designation.Name).ToList()
             };
         }
 
-        // Method to get a product by name and return it as ProductDetail
         public async Task<ProductDetail> GetProductByNameAsync(string name)
         {
             var product = await _productRepository.GetByNameAsync(name);
@@ -62,26 +68,42 @@ namespace DHP_Manager.Services.impl
                 Description = product.Description,
                 Price = product.Price,
                 Stock = product.Stock,
-                Category = product.Category
+                Category = product.Category,
+                Designations = product.DesignationProducts.Select(dp => dp.Designation.Name).ToList()
             };
         }
 
-        // Method to add a new product using ProductInput
+        public async Task<ProductDetail> GetProductWithDesignationsAsync(int id)
+        {
+            var product = await _productRepository.GetProductWithDesignationsAsync(id);
+            if (product == null)
+                throw new KeyNotFoundException($"Product with ID {id} not found.");
+
+            return new ProductDetail
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                Stock = product.Stock,
+                Category = product.Category,
+                Designations = product.DesignationProducts.Select(dp => dp.Designation.Name).ToList()
+            };
+        }
+
         public async Task AddProductAsync(ProductInput productInput)
         {
-            // Map ProductInput to Product entity
-            var product = productInput.ToEntity(productInput);
+            var product = productInput.ToEntity(productInput); // Assuming ToEntity is an extension method
+            product.DesignationProducts = new List<DesignationProduct>();
             await _productRepository.AddAsync(product);
         }
 
-        // Method to update an existing product by ID using ProductInput
         public async Task UpdateProductAsync(int id, ProductInput productInput)
         {
             var existingProduct = await _productRepository.GetByIdAsync(id);
             if (existingProduct == null)
                 throw new KeyNotFoundException("Product not found.");
 
-            // Update properties of existing product
             existingProduct.Name = productInput.Name;
             existingProduct.Description = productInput.Description;
             existingProduct.Price = productInput.Price;
@@ -100,14 +122,13 @@ namespace DHP_Manager.Services.impl
             if (existingProduct == null)
                 throw new KeyNotFoundException("Product not found.");
 
-            // Update only the fields that are provided in the patch DTO
             if (!string.IsNullOrEmpty(productPatchDto.Name))
                 existingProduct.Name = productPatchDto.Name;
-            if (productPatchDto.Description != null) // Nullable string, so null check is fine
+            if (productPatchDto.Description != null)
                 existingProduct.Description = productPatchDto.Description;
-            if (productPatchDto.Price != default) // Check if Price has been explicitly set
+            if (productPatchDto.Price != default)
                 existingProduct.Price = productPatchDto.Price;
-            if (productPatchDto.Stock != default) // Check if Stock has been explicitly set
+            if (productPatchDto.Stock != default)
                 existingProduct.Stock = productPatchDto.Stock;
             if (!string.IsNullOrEmpty(productPatchDto.Category))
                 existingProduct.Category = productPatchDto.Category;
@@ -115,14 +136,81 @@ namespace DHP_Manager.Services.impl
             await _productRepository.UpdateAsync(existingProduct);
         }
 
-        // Method to delete a product by ID
         public async Task DeleteProductAsync(int id)
         {
-            var existingProduct = await _productRepository.GetByIdAsync(id);
-            if (existingProduct == null)
+            var product = await _productRepository.GetProductWithDesignationsAsync(id);
+            if (product == null)
                 throw new KeyNotFoundException("Product not found.");
 
+            if (product.DesignationProducts.Any())
+                throw new InvalidOperationException("Cannot delete product that is associated with designations.");
+
             await _productRepository.DeleteAsync(id);
+        }
+
+
+        public async Task UpdateProductStocksAsync(Dictionary<int, int> productQuantities)
+        {
+            var productIds = productQuantities.Keys.ToList();
+            var products = await _productRepository.GetProductsByIdsAsync(productIds);
+
+            foreach (var product in products.Values)
+            {
+                if (productQuantities.TryGetValue(product.Id, out int quantityToDeduct))
+                {
+                    if (product.Stock < quantityToDeduct)
+                        throw new InsufficientStockException(
+                            $"Cannot deduct {quantityToDeduct} from product '{product.Name}'. Current stock: {product.Stock}");
+
+                    product.Stock -= quantityToDeduct;
+                }
+            }
+
+            foreach (var product in products.Values)
+            {
+                await _productRepository.UpdateAsync(product);
+            }
+        }
+
+        public async Task AddProductToDesignationAsync(int productId, int designationId, int quantity)
+        {
+            var product = await _productRepository.GetProductWithDesignationsAsync(productId);
+            if (product == null)
+                throw new KeyNotFoundException($"Product with ID {productId} not found.");
+
+            var designation = await _designationRepository.GetByIdAsync(designationId);
+            if (designation == null)
+                throw new KeyNotFoundException($"Designation with ID {designationId} not found.");
+
+            if (quantity <= 0)
+                throw new ArgumentException("Quantity must be greater than zero.", nameof(quantity));
+
+            var designationProduct = new DesignationProduct
+            {
+                ProductId = productId,
+                DesignationId = designationId,
+                Quantity = quantity
+            };
+
+            product.DesignationProducts.Add(designationProduct);
+            await _productRepository.UpdateAsync(product);
+        }
+
+        public async Task RemoveProductFromDesignationAsync(int productId, int designationId)
+        {
+            var product = await _productRepository.GetProductWithDesignationsAsync(productId);
+            if (product == null)
+                throw new KeyNotFoundException($"Product with ID {productId} not found.");
+
+            var designationProduct = product.DesignationProducts
+                .FirstOrDefault(dp => dp.DesignationId == designationId);
+
+            if (designationProduct == null)
+                throw new InvalidOperationException(
+                    $"Product {productId} is not associated with Designation {designationId}.");
+
+            product.DesignationProducts.Remove(designationProduct);
+            await _productRepository.UpdateAsync(product);
         }
     }
 }

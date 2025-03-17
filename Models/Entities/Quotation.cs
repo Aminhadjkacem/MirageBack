@@ -10,13 +10,12 @@ namespace DHP_Manager.Models.Entities
 
         [Required]
         [StringLength(100)]
-        public required string Designation { get; set; }
-
-        [Required]
-        [StringLength(100)]
         public required string ProjectName { get; set; }
 
-        // Navigation property for the many-to-many relationship
-        public List<QuotationProduct> QuotationProducts { get; set; } = new();
+        [Required]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // ✅ One Quotation -> Many Designations
+        public List<Designation> Designations { get; set; } = new();
     }
 }

@@ -1,14 +1,17 @@
-﻿using DHP_Manager.Models.Details;
-using DHP_Manager.Models.input;
+﻿using DHP_Manager.Models.Entities;
+using DHP_Manager.Models.Input;
+using DHP_Manager.Models.response;
 
-namespace DHP_Manager.Services.Interfaces
+namespace DHP_Manager.Services.Interface
 {
     public interface IQuotationService
     {
-        Task<IEnumerable<QuotationDetails>> GetAllQuotationsAsync();
-        Task<QuotationDetails?> GetQuotationByIdAsync(int id);
-        Task<QuotationDetails> CreateQuotationAsync(QuotationInput quotationInput);
-        Task<QuotationDetails> UpdateQuotationAsync(int id, QuotationInput quotationInput);
-        Task<bool> DeleteQuotationAsync(int id);
+        Task<QuotationResponse> CreateQuotationAsync(QuotationInput quotationInput); // Updated return type
+        Task<Quotation> GetQuotationAsync(int id); // Keep as is for internal use
+        Task<IEnumerable<QuotationResponse>> GetAllQuotationsAsync(); // Updated return type
+        Task<QuotationResponse> GetQuotationWithDesignationsAsync(int id); // Updated return type
+        Task UpdateQuotationAsync(Quotation quotation);
+        Task DeleteQuotationAsync(int id);
+        Task AddDesignationToQuotationAsync(int quotationId, string designationName);
     }
 }
