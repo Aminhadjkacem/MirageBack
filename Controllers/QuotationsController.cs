@@ -3,6 +3,8 @@ using DHP_Manager.Models.Input;
 using DHP_Manager.Models.Entities;
 using DHP_Manager.Models.response;
 using DHP_Manager.Services.Interface;
+using DHP_Manager.Models.input;
+using Microsoft.EntityFrameworkCore;
 
 namespace DHP_Manager.Controllers
 {
@@ -64,21 +66,21 @@ namespace DHP_Manager.Controllers
             }
         }
 
-        [HttpPut("{id}")]
+        [HttpPut]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateQuotation(int id, [FromBody] Quotation quotation)
+        public async Task<IActionResult> UpdateQuotation([FromBody] QuotationUpdateInput quotationInput)
         {
-            if (id != quotation.Id)
-                return BadRequest("Quotation ID mismatch");
+            if (quotationInput.Id <= 0 || quotationInput.Id != quotationInput.Id)
+                return BadRequest("Invalid or mismatched quotation ID");
 
             try
             {
-                if (string.IsNullOrWhiteSpace(quotation.ProjectName))
+                if (string.IsNullOrWhiteSpace(quotationInput.ProjectName))
                     return BadRequest("Project name cannot be empty");
 
-                await _quotationService.UpdateQuotationAsync(quotation);
+                await _quotationService.UpdateQuotationAsync(quotationInput);
                 return NoContent();
             }
             catch (KeyNotFoundException ex)
@@ -88,6 +90,14 @@ namespace DHP_Manager.Controllers
             catch (ArgumentNullException ex)
             {
                 return BadRequest(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (DbUpdateException ex)
+            {
+                return BadRequest($"Database update failed: {ex.InnerException?.Message}");
             }
         }
 

@@ -30,6 +30,7 @@ namespace DHP_Manager.Controllers
 
             var productResponses = products.Select(p => new ProductResponse
             {
+                Id = p.Id,
                 Name = p.Name,
                 Description = p.Description,
                 Price = p.Price,
@@ -52,6 +53,7 @@ namespace DHP_Manager.Controllers
 
             var productResponse = new ProductResponse
             {
+                Id = product.Id,
                 Name = product.Name,
                 Description = product.Description,
                 Price = product.Price,
