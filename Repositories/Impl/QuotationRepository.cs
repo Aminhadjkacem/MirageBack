@@ -51,7 +51,83 @@ namespace DHP_Manager.Repositories.Impl
 
         public async Task UpdateAsync(Quotation quotation)
         {
-            _context.Quotations.Update(quotation);
+            var existingQuotation = await _context.Quotations
+                .Include(q => q.Designations)
+                .ThenInclude(d => d.DesignationProducts)
+                .FirstOrDefaultAsync(q => q.Id == quotation.Id);
+
+            if (existingQuotation == null)
+                throw new KeyNotFoundException($"Quotation with ID {quotation.Id} not found");
+
+            // Update Quotation properties
+            _context.Entry(existingQuotation).CurrentValues.SetValues(quotation);
+
+            // Handle Designations
+            if (quotation.Designations != null)
+            {
+                foreach (var designationInput in quotation.Designations)
+                {
+                    var existingDesignation = existingQuotation.Designations
+                        .FirstOrDefault(d => d.Id == designationInput.Id);
+
+                    if (existingDesignation != null)
+                    {
+                        // Update existing designation
+                        _context.Entry(existingDesignation).CurrentValues.SetValues(designationInput);
+                    }
+                    else
+                    {
+                        // Add new designation
+                        designationInput.QuotationId = quotation.Id; // Ensure FK is set
+                        existingQuotation.Designations.Add(designationInput);
+                    }
+
+                    // Handle DesignationProducts
+                    if (designationInput.DesignationProducts != null)
+                    {
+                        var existingProducts = existingDesignation?.DesignationProducts ?? new List<DesignationProduct>();
+
+                        foreach (var productInput in designationInput.DesignationProducts)
+                        {
+                            var existingProduct = existingProducts
+                                .FirstOrDefault(p => p.ProductId == productInput.ProductId);
+
+                            if (existingProduct != null)
+                            {
+                                existingProduct.Quantity = productInput.Quantity;
+                            }
+                            else
+                            {
+                                productInput.DesignationId = designationInput.Id;
+                                existingQuotation.Designations
+                                    .First(d => d.Id == designationInput.Id)
+                                    .DesignationProducts.Add(productInput);
+                            }
+                        }
+
+                        // Remove products no longer in input
+                        var inputProductIds = designationInput.DesignationProducts.Select(p => p.ProductId).ToList();
+                        var productsToRemove = existingProducts
+                            .Where(p => !inputProductIds.Contains(p.ProductId))
+                            .ToList();
+                        foreach (var product in productsToRemove)
+                        {
+                            existingDesignation?.DesignationProducts.Remove(product);
+                        }
+                    }
+                }
+
+                // Remove designations no longer in input
+                var inputDesignationIds = quotation.Designations.Select(d => d.Id).ToList();
+                var designationsToRemove = existingQuotation.Designations
+                    .Where(d => !inputDesignationIds.Contains(d.Id))
+                    .ToList();
+                foreach (var designation in designationsToRemove)
+                {
+                    existingQuotation.Designations.Remove(designation);
+                }
+            }
+
             await _context.SaveChangesAsync();
         }
 

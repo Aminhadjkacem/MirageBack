@@ -1,7 +1,10 @@
-﻿using DHP_Manager.Models.Entities;
+﻿using DHP_Manager.Helpers.Exceptions;
+using DHP_Manager.Models.Entities;
+using DHP_Manager.Models.input;
 using DHP_Manager.Models.Input;
 using DHP_Manager.Models.response;
 using DHP_Manager.Repositories.Interface;
+using DHP_Manager.Services.Impl;
 using DHP_Manager.Services.Interface;
 
 namespace DHP_Manager.Services.impl
@@ -10,16 +13,16 @@ namespace DHP_Manager.Services.impl
     {
         private readonly IQuotationRepository _quotationRepository;
         private readonly IDesignationRepository _designationRepository;
-        private readonly IProductRepository _productRepository;
+        private readonly IProductService _productService;
 
         public QuotationService(
             IQuotationRepository quotationRepository,
             IDesignationRepository designationRepository,
-            IProductRepository productRepository)
+            IProductService productService)
         {
             _quotationRepository = quotationRepository;
             _designationRepository = designationRepository;
-            _productRepository = productRepository;
+            _productService = productService;
         }
 
         public async Task<QuotationResponse> CreateQuotationAsync(QuotationInput quotationInput)
@@ -27,12 +30,15 @@ namespace DHP_Manager.Services.impl
             if (string.IsNullOrWhiteSpace(quotationInput.ProjectName))
                 throw new ArgumentException("Project name cannot be empty", nameof(quotationInput.ProjectName));
 
+            if (!_productService.VerifyStockAsync(quotationInput.Designations.SelectMany(d => d.Products).ToList()).Result)
+                throw new InsufficientStockException("Not enough stock for one or more products.");
+
             var quotation = new Quotation
             {
                 ProjectName = quotationInput.ProjectName,
                 Designations = new List<Designation>()
             };
-
+            
             await _quotationRepository.AddAsync(quotation);
 
             foreach (var designationInput in quotationInput.Designations)
@@ -46,7 +52,7 @@ namespace DHP_Manager.Services.impl
 
                 foreach (var productInput in designationInput.Products)
                 {
-                    var product = await _productRepository.GetByIdAsync(productInput.ProductId);
+                    var product = await _productService.GetProductByIdAsync(productInput.ProductId);
                     if (product == null)
                         throw new KeyNotFoundException($"Product with ID {productInput.ProductId} not found.");
 
@@ -81,12 +87,13 @@ namespace DHP_Manager.Services.impl
             return MapToResponse(quotation);
         }
 
-        public async Task UpdateQuotationAsync(Quotation quotation)
+        public async Task UpdateQuotationAsync(QuotationUpdateInput quotationInput)
         {
-            if (quotation == null)
-                throw new ArgumentNullException(nameof(quotation));
+            if (quotationInput == null)
+                throw new ArgumentNullException(nameof(quotationInput));
 
-            await _quotationRepository.UpdateAsync(quotation);
+            var quotationEntity = QuotationUpdateInput.ToEntity(quotationInput);
+            await _quotationRepository.UpdateAsync(quotationEntity);
         }
 
         public async Task DeleteQuotationAsync(int id)
