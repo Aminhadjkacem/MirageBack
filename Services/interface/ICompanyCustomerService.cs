@@ -13,5 +13,6 @@ namespace DHP_Manager.Services.Interface
         Task<CompanyCustomerDetails> AddAsync(CompanyCustomerInput customer);
         Task<CompanyCustomerDetails> UpdateAsync(string matriculeFiscal, CompanyCustomerInput customer);
         Task<bool> DeleteAsync(string matriculeFiscal);
+        Task<CompanyCustomer> GetByIdAsync(int id);
     }
 }

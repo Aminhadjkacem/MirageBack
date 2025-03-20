@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Collections.Generic;
+using DHP_Manager.Models.ENUM;
 
 namespace DHP_Manager.Models.Entities
 {
@@ -15,7 +16,20 @@ namespace DHP_Manager.Models.Entities
         [Required]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // ✅ One Quotation -> Many Designations
+        [Required]
+        public CustomerType CustomerType { get; set; } // Renamed to CustomerType
+
+        // Removed CustomerName since we’re using CustomerId via FKs
+
+        // Foreign key for NormalCustomer (nullable)
+        public int? NormalCustomerId { get; set; }
+        public NormalCustomer NormalCustomer { get; set; } // Navigation property
+
+        // Foreign key for CompanyCustomer (nullable)
+        public int? CompanyCustomerId { get; set; }
+        public CompanyCustomer CompanyCustomer { get; set; } // Navigation property
+
+        // One Quotation -> Many Designations
         public List<Designation> Designations { get; set; } = new();
     }
 }

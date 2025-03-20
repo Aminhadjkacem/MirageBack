@@ -5,6 +5,7 @@ using DHP_Manager.Models.response;
 using DHP_Manager.Services.Interface;
 using DHP_Manager.Models.input;
 using Microsoft.EntityFrameworkCore;
+using DHP_Manager.Helpers.Exceptions;
 
 namespace DHP_Manager.Controllers
 {
@@ -50,6 +51,9 @@ namespace DHP_Manager.Controllers
         {
             try
             {
+                if (quotationInput == null)
+                    return BadRequest("Quotation input cannot be null.");
+
                 if (string.IsNullOrWhiteSpace(quotationInput.ProjectName))
                     return BadRequest("Project name cannot be empty");
 
@@ -61,6 +65,10 @@ namespace DHP_Manager.Controllers
                 return BadRequest(ex.Message);
             }
             catch (KeyNotFoundException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (InsufficientStockException ex)
             {
                 return BadRequest(ex.Message);
             }

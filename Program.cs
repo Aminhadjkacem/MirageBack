@@ -2,7 +2,6 @@ using DHP_Manager.Data;
 using DHP_Manager.Models.Entities;
 using DHP_Manager.Repositories.Impl;
 using DHP_Manager.Repositories.Interface;
-using DHP_Manager.Services.impl;
 using DHP_Manager.Services.Impl;
 using DHP_Manager.Services.Interface;
 using DHP_Manager.Utils.Interface;
@@ -12,16 +11,19 @@ using DHP_Manager.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Text.Json.Serialization;
+using DHP_Manager.Services.impl;
 
 var builder = WebApplication.CreateBuilder(args);
-var key = Encoding.ASCII.GetBytes(builder.Configuration["AppSettings:Secret"]);
+
 // Add services to the container.
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
+
 builder.Services.AddAuthentication(options =>
 {
-    // Set the default authentication scheme
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
@@ -30,18 +32,27 @@ builder.Services.AddAuthentication(options =>
         var key = Encoding.ASCII.GetBytes(builder.Configuration["AppSettings:Secret"]);
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = false,   // Disable issuer validation
-            ValidateAudience = false, // Disable audience validation
+            ValidateIssuer = false,
+            ValidateAudience = false,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(key),
             ClockSkew = TimeSpan.Zero
         };
     });
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.PropertyNamingPolicy = null; // Optional
+    });
+
+// Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Dependency Injection
 builder.Services.AddScoped<ICompanyCustomerRepository, CompanyCustomerRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
@@ -52,21 +63,20 @@ builder.Services.AddScoped<IQuotationRepository, QuotationRepository>();
 builder.Services.AddScoped<IQuotationService, QuotationService>();
 builder.Services.AddScoped<IDesignationRepository, DesignationRepository>();
 builder.Services.AddScoped<IDesignationService, DesignationService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IJwtUtils, JwtUtils>();
 
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173") // Add the URL of your frontend
+        policy.WithOrigins("http://localhost:5173")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-
-builder.Services.AddScoped<NormalCustomerService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IJwtUtils, JwtUtils>();
 
 var app = builder.Build();
 
@@ -74,7 +84,7 @@ var app = builder.Build();
 app.UseCors("AllowFrontend");
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment() || app.Environment.IsProduction()) // Ensure it's available
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
