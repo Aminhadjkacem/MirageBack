@@ -8,6 +8,7 @@ using DHP_Manager.Models.Details;
 using DHP_Manager.Models.input;
 using DHP_Manager.Models.Entities;
 using DHP_Manager.Models.Input;
+using DHP_Manager.Repositories.Impl;
 namespace DHP_Manager.Services.impl
 {
     public class NormalCustomerService:INormalCustomerService
@@ -72,6 +73,11 @@ namespace DHP_Manager.Services.impl
 
             await _repository.DeleteAsync(existingCustomer.Id);
             return true;
+        }
+
+        public async Task<NormalCustomer> GetByIdAsync(int id)
+        {
+            return await _repository.GetByIdAsync(id);
         }
     }
 }

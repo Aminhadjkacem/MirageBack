@@ -18,8 +18,10 @@ namespace DHP_Manager.Repositories.Impl
         {
             return await _context.Quotations
                 .Include(q => q.Designations)
-                .ThenInclude(d => d.DesignationProducts)
-                .ThenInclude(dp => dp.Product) // Include Product to get ProductName
+                    .ThenInclude(d => d.DesignationProducts)
+                        .ThenInclude(dp => dp.Product) // Include Product for ProductName
+                .Include(q => q.NormalCustomer) // Include NormalCustomer details
+                .Include(q => q.CompanyCustomer) // Include CompanyCustomer details
                 .ToListAsync();
         }
 
@@ -33,8 +35,10 @@ namespace DHP_Manager.Repositories.Impl
         {
             var quotation = await _context.Quotations
                 .Include(q => q.Designations)
-                .ThenInclude(d => d.DesignationProducts)
-                .ThenInclude(dp => dp.Product)
+                    .ThenInclude(d => d.DesignationProducts)
+                        .ThenInclude(dp => dp.Product)
+                .Include(q => q.NormalCustomer) // Include NormalCustomer if present
+                .Include(q => q.CompanyCustomer) // Include CompanyCustomer if present
                 .FirstOrDefaultAsync(q => q.Id == id);
 
             if (quotation == null)

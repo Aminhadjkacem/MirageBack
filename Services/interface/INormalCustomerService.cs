@@ -1,5 +1,6 @@
 ﻿using DHP_Manager.Models.Details;
 using DHP_Manager.Models.DTOs;
+using DHP_Manager.Models.Entities;
 using DHP_Manager.Models.input;
 using DHP_Manager.Models.Input;
 
@@ -12,5 +13,6 @@ namespace DHP_Manager.Services.Interface
         Task<NormalCustomerDetails> AddAsync(NormalCustomerInput dto);
         Task<NormalCustomerDetails> UpdateAsync(string phone, NormalCustomerInput dto);
         Task<bool> DeleteAsync(string phone);
+        Task<NormalCustomer> GetByIdAsync(int id);
     }
 }

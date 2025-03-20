@@ -5,6 +5,7 @@ using DHP_Manager.Repositories.Interface;
 using DHP_Manager.Services.Interface;
 using DHP_Manager.Models.input;
 using DHP_Manager.Models.Details;
+using DHP_Manager.Repositories.Impl;
 
 namespace DHP_Manager.Services.impl
 {
@@ -68,6 +69,11 @@ namespace DHP_Manager.Services.impl
 
             await _repository.DeleteAsync(matriculeFiscal);
             return true;
+        }
+
+        public async Task<CompanyCustomer> GetByIdAsync(int id)
+        {
+            return await _repository.GetByIdAsync(id);
         }
     }
 }

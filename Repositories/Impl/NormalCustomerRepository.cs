@@ -64,6 +64,12 @@ namespace DHP_Manager.Repositories.Impl
                 await _context.SaveChangesAsync();
             }
         }
+
+        public async Task<NormalCustomer> GetByIdAsync(int id)
+        {
+            return await _context.NormalCustomers
+                .FirstOrDefaultAsync(nc => nc.Id == id);
+        }
     }
 
 }

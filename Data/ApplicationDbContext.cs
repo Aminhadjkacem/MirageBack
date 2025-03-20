@@ -18,6 +18,7 @@ namespace DHP_Manager.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // Unique indexes
             modelBuilder.Entity<NormalCustomer>()
                 .HasIndex(c => c.CIN)
                 .IsUnique();
@@ -57,7 +58,23 @@ namespace DHP_Manager.Data
                 .HasForeignKey(dp => dp.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Updated default values for PostgreSQL
+            // Quotation-NormalCustomer relationship (One-to-Many)
+            modelBuilder.Entity<Quotation>()
+                .HasOne(q => q.NormalCustomer)
+                .WithMany(nc => nc.Quotations)
+                .HasForeignKey(q => q.NormalCustomerId)
+                .IsRequired(false) // Optional relationship
+                .OnDelete(DeleteBehavior.Restrict); // Prevent deletion of customer if quotations exist
+
+            // Quotation-CompanyCustomer relationship (One-to-Many)
+            modelBuilder.Entity<Quotation>()
+                .HasOne(q => q.CompanyCustomer)
+                .WithMany(cc => cc.Quotations)
+                .HasForeignKey(q => q.CompanyCustomerId)
+                .IsRequired(false) // Optional relationship
+                .OnDelete(DeleteBehavior.Restrict); // Prevent deletion of customer if quotations exist
+
+            // Default values for PostgreSQL
             modelBuilder.Entity<Quotation>()
                 .Property(q => q.CreatedAt)
                 .HasDefaultValueSql("NOW()"); // PostgreSQL function for current UTC timestamp
@@ -65,6 +82,11 @@ namespace DHP_Manager.Data
             modelBuilder.Entity<Designation>()
                 .Property(d => d.CreatedAt)
                 .HasDefaultValueSql("NOW()"); // PostgreSQL function for current UTC timestamp
+
+            // Optional: Ensure CustomerType is stored as desired (default is int, can be string if preferred)
+            modelBuilder.Entity<Quotation>()
+                .Property(q => q.CustomerType)
+                .HasConversion<string>(); // Stores enum as string (e.g., "NORMAL", "COMPANY") instead of int (0, 1)
         }
     }
 }

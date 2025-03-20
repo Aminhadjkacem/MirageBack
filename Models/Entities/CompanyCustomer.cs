@@ -17,11 +17,11 @@ namespace DHP_Manager.Models.Entities
 
         [Required]
         public string MatriculeFiscal { get; set; }
-        
+
         [Required]
         public string Contact1Name { get; set; }
-        [Required]
 
+        [Required]
         public string Contact1Phone { get; set; }
 
         public string Contact2Name { get; set; }
@@ -29,6 +29,9 @@ namespace DHP_Manager.Models.Entities
 
         public string Contact3Name { get; set; }
         public string Contact3Phone { get; set; }
+
+        // One CompanyCustomer -> Many Quotations
+        public List<Quotation> Quotations { get; set; } = new();
     }
 
 }

@@ -18,5 +18,8 @@ namespace DHP_Manager.Models.Entities
 
         [Required]
         public string CIN { get; set; }
+
+        // One NormalCustomer -> Many Quotations
+        public List<Quotation> Quotations { get; set; } = new();
     }
 }

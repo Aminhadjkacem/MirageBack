@@ -11,5 +11,6 @@ namespace DHP_Manager.Repositories.Interface
         Task<CompanyCustomer> AddAsync(CompanyCustomer customer);
         Task<CompanyCustomer> UpdateAsync(CompanyCustomer customer);
         Task DeleteAsync(string matriculeFiscal);
+        Task<CompanyCustomer> GetByIdAsync(int id);
     }
 }

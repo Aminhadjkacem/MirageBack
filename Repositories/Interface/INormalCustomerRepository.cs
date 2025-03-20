@@ -10,5 +10,6 @@ namespace DHP_Manager.Repositories.Interface
         Task<NormalCustomer> AddAsync(NormalCustomer entity);
         Task<NormalCustomer> UpdateAsync(string phone, NormalCustomer dto);
         Task DeleteAsync(int id);
+        Task<NormalCustomer> GetByIdAsync(int id);
     }
 }
