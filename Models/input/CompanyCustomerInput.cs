@@ -4,6 +4,7 @@ namespace DHP_Manager.Models.input
 {
     public class CompanyCustomerInput
     {
+        public int Id { get; set; }
         public string CompanyName { get; set; }
         public string Address { get; set; }
         public string Ville { get; set; }
@@ -19,6 +20,7 @@ namespace DHP_Manager.Models.input
         {
             return new CompanyCustomer
             {
+                Id = this.Id,
                 CompanyName = this.CompanyName,
                 Address = this.Address,
                 Ville = this.Ville,

@@ -4,6 +4,7 @@ namespace DHP_Manager.Models.Details
 {
     public class CompanyCustomerDetails
     {
+        public int id { get; set; }
         public string CompanyName { get; set; }
         public string Address { get; set; }
         public string Ville { get; set; }
@@ -23,6 +24,7 @@ namespace DHP_Manager.Models.Details
 
             return new CompanyCustomerDetails
             {
+                id = entity.Id,
                 CompanyName = entity.CompanyName,
                 Address = entity.Address,
                 Ville = entity.Ville,

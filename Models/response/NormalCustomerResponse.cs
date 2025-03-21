@@ -5,6 +5,7 @@ namespace DHP_Manager.Models.response
 {
     public class NormalCustomerResponse
     {
+        public int Id { get; set; }
         public string FullName { get; set; }
         public string PhoneNumber { get; set; }
         public string Address { get; set; }
@@ -17,6 +18,7 @@ namespace DHP_Manager.Models.response
 
             return new NormalCustomerResponse
             {
+                Id = details.id,
                 FullName = details.FullName,
                 PhoneNumber = details.PhoneNumber,
                 Address = details.Address,

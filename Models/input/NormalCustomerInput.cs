@@ -4,6 +4,7 @@ namespace DHP_Manager.Models.Input
 {
     public class NormalCustomerInput
     {
+        public int Id { get; set;} 
         public string FullName { get; set; }
         public string PhoneNumber { get; set; }
         public string Address { get; set; }
@@ -14,6 +15,7 @@ namespace DHP_Manager.Models.Input
         {
             return new NormalCustomer
             {
+                Id = this.Id,
                 FullName = this.FullName,
                 PhoneNumber = this.PhoneNumber,
                 Address = this.Address,

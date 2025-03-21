@@ -4,6 +4,7 @@ namespace DHP_Manager.Models.response
 {
     public class CompanyCustomerResponse
     {
+        public int Id { get; set; }
         public string CompanyName { get; set; }
         public string Address { get; set; }
         public string Ville { get; set; }
@@ -20,6 +21,7 @@ namespace DHP_Manager.Models.response
         {
             return new CompanyCustomerResponse
             {
+                Id = details.id,
                 CompanyName = details.CompanyName,
                 Address = details.Address,
                 Ville = details.Ville,

@@ -4,6 +4,7 @@ namespace DHP_Manager.Models.Details
 {
     public class NormalCustomerDetails
     {
+        public int id { get; set;}
         public string FullName { get; set; }
         public string PhoneNumber { get; set; }
         public string Address { get; set; }
@@ -17,6 +18,7 @@ namespace DHP_Manager.Models.Details
 
             return new NormalCustomerDetails
             {
+                id = entity.Id,
                 FullName = entity.FullName,
                 PhoneNumber = entity.PhoneNumber,
                 Address = entity.Address,

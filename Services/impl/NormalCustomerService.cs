@@ -26,6 +26,7 @@ namespace DHP_Manager.Services.impl
             var customers = await _repository.GetAllAsync();
             return customers.Select(c => new NormalCustomerDetails
             {
+                id = c.Id,
                 FullName = c.FullName,
                 PhoneNumber = c.PhoneNumber,
                 Address = c.Address,
