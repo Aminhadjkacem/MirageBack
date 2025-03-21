@@ -1,5 +1,6 @@
 ﻿using DHP_Manager.Data;
 using DHP_Manager.Models.Entities;
+using DHP_Manager.Models.ENUM;
 using DHP_Manager.Repositories.Interface;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,6 +30,30 @@ namespace DHP_Manager.Repositories.Impl
         {
             return await _context.Quotations
                 .FirstOrDefaultAsync(q => q.Id == id);
+        }
+
+        public async Task UpdateQuotationStatusAsync(int id, QuotationStatus status)
+        {
+            var quotation = await _context.Quotations
+                .FirstOrDefaultAsync(q => q.Id == id);
+
+            if (quotation == null)
+                throw new KeyNotFoundException($"Quotation with ID {id} not found.");
+
+            quotation.Status = status;
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<List<Quotation>> GetValidatedQuotationsAsync()
+        {
+            return await _context.Quotations
+                .Where(q => q.Status == QuotationStatus.VALIDATED)
+                .Include(q => q.Designations)
+                    .ThenInclude(d => d.DesignationProducts)
+                        .ThenInclude(dp => dp.Product)
+                .Include(q => q.NormalCustomer)
+                .Include(q => q.CompanyCustomer)
+                .ToListAsync();
         }
 
         public async Task<Quotation> GetQuotationWithDesignationsAsync(int id)

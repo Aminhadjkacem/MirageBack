@@ -70,7 +70,8 @@ namespace DHP_Manager.Services.impl
                 CustomerType = quotationInput.CustomerType,
                 NormalCustomerId = quotationInput.CustomerType == CustomerType.NORMAL ? quotationInput.CustomerId : null,
                 CompanyCustomerId = quotationInput.CustomerType == CustomerType.COMPANY ? quotationInput.CustomerId : null,
-                Designations = new List<Designation>()
+                Designations = new List<Designation>(),
+                Status = QuotationStatus.PENDING // Explicitly set status to PENDING
             };
 
             await _quotationRepository.AddAsync(quotation);
@@ -106,6 +107,17 @@ namespace DHP_Manager.Services.impl
         public async Task<Quotation> GetQuotationAsync(int id)
         {
             return await _quotationRepository.GetByIdAsync(id);
+        }
+
+        public async Task<List<QuotationResponse>> GetValidatedQuotationsAsync()
+        {
+            var validatedQuotations = await _quotationRepository.GetValidatedQuotationsAsync();
+            return validatedQuotations.Select(MapToResponse).ToList();
+        }
+
+        public async Task ValidateQuotationAsync(int id)
+        {
+            await _quotationRepository.UpdateQuotationStatusAsync(id, QuotationStatus.VALIDATED);
         }
 
         public async Task<IEnumerable<QuotationResponse>> GetAllQuotationsAsync()
@@ -155,12 +167,20 @@ namespace DHP_Manager.Services.impl
             if (quotation == null)
                 throw new ArgumentNullException(nameof(quotation));
 
+            // Calculate base price considering quantities
+            decimal basePrice = quotation.Designations
+                .SelectMany(d => d.DesignationProducts)
+                .Sum(dp => dp.Product.Price * dp.Quantity);
+
+            // Calculate total price with 30% markup
+            decimal totalPrice = basePrice * 1.3m;
+
             var response = new QuotationResponse
             {
                 Id = quotation.Id,
                 ProjectName = quotation.ProjectName,
                 CreatedAt = quotation.CreatedAt,
-                CustomerType = quotation.CustomerType, // Added CustomerType
+                CustomerType = quotation.CustomerType,
                 Designations = quotation.Designations.Select(d => new DesignationResponse
                 {
                     Id = d.Id,
@@ -171,7 +191,9 @@ namespace DHP_Manager.Services.impl
                         ProductName = dp.Product?.Name ?? "Unknown",
                         Quantity = dp.Quantity
                     }).ToList()
-                }).ToList()
+                }).ToList(),
+                TotalPrice = totalPrice,
+                Status = quotation.Status // Added Status mapping
             };
 
             // Map customer details based on CustomerType
