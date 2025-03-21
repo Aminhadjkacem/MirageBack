@@ -17,17 +17,18 @@ namespace DHP_Manager.Models.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [Required]
-        public CustomerType CustomerType { get; set; } // Renamed to CustomerType
+        public CustomerType CustomerType { get; set; }
 
-        // Removed CustomerName since we’re using CustomerId via FKs
+        [Required]
+        public QuotationStatus Status { get; set; } = QuotationStatus.PENDING; // New field with default value
 
         // Foreign key for NormalCustomer (nullable)
         public int? NormalCustomerId { get; set; }
-        public NormalCustomer NormalCustomer { get; set; } // Navigation property
+        public NormalCustomer NormalCustomer { get; set; }
 
         // Foreign key for CompanyCustomer (nullable)
         public int? CompanyCustomerId { get; set; }
-        public CompanyCustomer CompanyCustomer { get; set; } // Navigation property
+        public CompanyCustomer CompanyCustomer { get; set; }
 
         // One Quotation -> Many Designations
         public List<Designation> Designations { get; set; } = new();

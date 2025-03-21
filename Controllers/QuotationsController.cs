@@ -28,6 +28,14 @@ namespace DHP_Manager.Controllers
             return Ok(quotations);
         }
 
+        [HttpGet("validated")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<ActionResult<List<QuotationResponse>>> GetValidatedQuotations()
+        {
+            var validatedQuotations = await _quotationService.GetValidatedQuotationsAsync();
+            return Ok(validatedQuotations);
+        }
+
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -37,6 +45,22 @@ namespace DHP_Manager.Controllers
             {
                 var quotation = await _quotationService.GetQuotationWithDesignationsAsync(id);
                 return Ok(quotation);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
+        [HttpPut("{id}/validate")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ValidateQuotation(int id)
+        {
+            try
+            {
+                await _quotationService.ValidateQuotationAsync(id);
+                return NoContent();
             }
             catch (KeyNotFoundException ex)
             {

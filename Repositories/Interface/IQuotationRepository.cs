@@ -1,4 +1,5 @@
 ﻿using DHP_Manager.Models.Entities;
+using DHP_Manager.Models.ENUM;
 
 namespace DHP_Manager.Repositories.Interface
 {
@@ -10,5 +11,7 @@ namespace DHP_Manager.Repositories.Interface
         Task AddAsync(Quotation quotation);
         Task UpdateAsync(Quotation quotation);
         Task DeleteAsync(int id);
+        Task UpdateQuotationStatusAsync(int id, QuotationStatus status);
+        Task<List<Quotation>> GetValidatedQuotationsAsync();
     }
 }
