@@ -20,7 +20,10 @@ namespace DHP_Manager.Models.Entities
         public CustomerType CustomerType { get; set; }
 
         [Required]
-        public QuotationStatus Status { get; set; } = QuotationStatus.PENDING; // New field with default value
+        public QuotationStatus Status { get; set; } = QuotationStatus.PENDING;
+
+        [Required]
+        public decimal TotalPrice { get; set; } // New field to persist total price
 
         // Foreign key for NormalCustomer (nullable)
         public int? NormalCustomerId { get; set; }
