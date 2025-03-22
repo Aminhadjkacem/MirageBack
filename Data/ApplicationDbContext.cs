@@ -15,6 +15,7 @@ namespace DHP_Manager.Data
         public DbSet<Quotation> Quotations { get; set; }
         public DbSet<Designation> Designations { get; set; }
         public DbSet<DesignationProduct> DesignationProducts { get; set; }
+        public DbSet<Settings> Settings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -87,6 +88,10 @@ namespace DHP_Manager.Data
             modelBuilder.Entity<Quotation>()
                 .Property(q => q.CustomerType)
                 .HasConversion<string>(); // Stores enum as string (e.g., "NORMAL", "COMPANY") instead of int (0, 1)
+
+            modelBuilder.Entity<Settings>()
+    .HasIndex(s => s.Key)
+    .IsUnique();
         }
     }
 }

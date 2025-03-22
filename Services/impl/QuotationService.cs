@@ -19,19 +19,22 @@ namespace DHP_Manager.Services.impl
         private readonly IProductService _productService;
         private readonly ICompanyCustomerService _companyCustomerService;
         private readonly INormalCustomerService _normalCustomerService;
+        private readonly ISettingsService _settingsService;
 
         public QuotationService(
             IQuotationRepository quotationRepository,
             IDesignationRepository designationRepository,
             IProductService productService,
             ICompanyCustomerService companyCustomerService,
-            INormalCustomerService normalCustomerService)
+            INormalCustomerService normalCustomerService,
+            ISettingsService settingsService)
         {
             _quotationRepository = quotationRepository;
             _designationRepository = designationRepository;
             _productService = productService;
             _companyCustomerService = companyCustomerService;
             _normalCustomerService = normalCustomerService;
+            _settingsService = settingsService;
         }
 
         public async Task<QuotationResponse> CreateQuotationAsync(QuotationInput quotationInput)
@@ -42,11 +45,11 @@ namespace DHP_Manager.Services.impl
             if (string.IsNullOrWhiteSpace(quotationInput.ProjectName))
                 throw new ArgumentException("Project name cannot be empty", nameof(quotationInput.ProjectName));
 
-            // Check stock availability (avoid blocking call with .Result)
+            // Check stock availability
             if (!await _productService.VerifyStockAsync(quotationInput.Designations.SelectMany(d => d.Products).ToList()))
                 throw new InsufficientStockException("Not enough stock for one or more products.");
 
-            // Validate customer exists based on CustomerType using services
+            // Validate customer exists based on CustomerType
             if (quotationInput.CustomerType == CustomerType.NORMAL)
             {
                 var normalCustomer = await _normalCustomerService.GetByIdAsync(quotationInput.CustomerId);
@@ -64,6 +67,7 @@ namespace DHP_Manager.Services.impl
                 throw new ArgumentException("Invalid CustomerType specified.", nameof(quotationInput.CustomerType));
             }
 
+            // Create the quotation entity
             var quotation = new Quotation
             {
                 ProjectName = quotationInput.ProjectName,
@@ -71,17 +75,17 @@ namespace DHP_Manager.Services.impl
                 NormalCustomerId = quotationInput.CustomerType == CustomerType.NORMAL ? quotationInput.CustomerId : null,
                 CompanyCustomerId = quotationInput.CustomerType == CustomerType.COMPANY ? quotationInput.CustomerId : null,
                 Designations = new List<Designation>(),
-                Status = QuotationStatus.PENDING // Explicitly set status to PENDING
+                Status = QuotationStatus.PENDING
             };
 
-            await _quotationRepository.AddAsync(quotation);
-
+            // Calculate base price and build designations
+            decimal basePrice = 0m;
             foreach (var designationInput in quotationInput.Designations)
             {
                 var designation = new Designation
                 {
                     Name = designationInput.Name,
-                    QuotationId = quotation.Id,
+                    // Do NOT set QuotationId or Id manually; let EF Core handle it
                     DesignationProducts = new List<DesignationProduct>()
                 };
 
@@ -96,10 +100,30 @@ namespace DHP_Manager.Services.impl
                         ProductId = productInput.ProductId,
                         Quantity = productInput.Quantity
                     });
+
+                    basePrice += product.Price * productInput.Quantity;
                 }
 
-                await _designationRepository.AddAsync(designation);
+                quotation.Designations.Add(designation); // Add to the navigation property
             }
+
+            // Fetch settings for price calculation
+            decimal profitMargin = await _settingsService.GetProfitMarginAsync();
+            decimal tvaMargin = await _settingsService.GetTVAMarginAsync();
+            decimal droitDuTimbrePrice = await _settingsService.GetDroitDuTimbrePriceAsync();
+
+            // Calculate total price
+            decimal priceWithProfit = basePrice * (1 + profitMargin);
+            decimal priceWithTVA = priceWithProfit * (1 + tvaMargin);
+            decimal totalPrice = priceWithTVA + droitDuTimbrePrice;
+
+            // Set the calculated total price on the quotation
+            quotation.TotalPrice = totalPrice;
+
+            // Save the quotation and its designations in one go
+            await _quotationRepository.AddAsync(quotation);
+
+            // No need for separate designation saves if cascading is configured
 
             var createdQuotation = await _quotationRepository.GetQuotationWithDesignationsAsync(quotation.Id);
             return MapToResponse(createdQuotation);
@@ -167,14 +191,6 @@ namespace DHP_Manager.Services.impl
             if (quotation == null)
                 throw new ArgumentNullException(nameof(quotation));
 
-            // Calculate base price considering quantities
-            decimal basePrice = quotation.Designations
-                .SelectMany(d => d.DesignationProducts)
-                .Sum(dp => dp.Product.Price * dp.Quantity);
-
-            // Calculate total price with 30% markup
-            decimal totalPrice = basePrice * 1.3m;
-
             var response = new QuotationResponse
             {
                 Id = quotation.Id,
@@ -192,11 +208,10 @@ namespace DHP_Manager.Services.impl
                         Quantity = dp.Quantity
                     }).ToList()
                 }).ToList(),
-                TotalPrice = totalPrice,
-                Status = quotation.Status // Added Status mapping
+                TotalPrice = quotation.TotalPrice, // Use persisted value
+                Status = quotation.Status
             };
 
-            // Map customer details based on CustomerType
             response.CustomerDetails = quotation.CustomerType switch
             {
                 CustomerType.NORMAL => NormalCustomerDetails.fromEntity(quotation.NormalCustomer),
