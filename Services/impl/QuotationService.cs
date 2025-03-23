@@ -85,26 +85,34 @@ namespace DHP_Manager.Services.impl
                 var designation = new Designation
                 {
                     Name = designationInput.Name,
-                    // Do NOT set QuotationId or Id manually; let EF Core handle it
                     DesignationProducts = new List<DesignationProduct>()
                 };
 
-                foreach (var productInput in designationInput.Products)
+                // Group products by ProductId and sum quantities
+                var productGroups = designationInput.Products
+                    .GroupBy(p => p.ProductId)
+                    .Select(g => new
+                    {
+                        ProductId = g.Key,
+                        TotalQuantity = g.Sum(p => p.Quantity)
+                    });
+
+                foreach (var productGroup in productGroups)
                 {
-                    var product = await _productService.GetProductByIdAsync(productInput.ProductId);
+                    var product = await _productService.GetProductByIdAsync(productGroup.ProductId);
                     if (product == null)
-                        throw new KeyNotFoundException($"Product with ID {productInput.ProductId} not found.");
+                        throw new KeyNotFoundException($"Product with ID {productGroup.ProductId} not found.");
 
                     designation.DesignationProducts.Add(new DesignationProduct
                     {
-                        ProductId = productInput.ProductId,
-                        Quantity = productInput.Quantity
+                        ProductId = productGroup.ProductId,
+                        Quantity = productGroup.TotalQuantity
                     });
 
-                    basePrice += product.Price * productInput.Quantity;
+                    basePrice += product.Price * productGroup.TotalQuantity;
                 }
 
-                quotation.Designations.Add(designation); // Add to the navigation property
+                quotation.Designations.Add(designation);
             }
 
             // Fetch settings for price calculation
@@ -119,11 +127,10 @@ namespace DHP_Manager.Services.impl
 
             // Set the calculated total price on the quotation
             quotation.TotalPrice = totalPrice;
+            quotation.TotalPriceHT = priceWithProfit;
 
             // Save the quotation and its designations in one go
             await _quotationRepository.AddAsync(quotation);
-
-            // No need for separate designation saves if cascading is configured
 
             var createdQuotation = await _quotationRepository.GetQuotationWithDesignationsAsync(quotation.Id);
             return MapToResponse(createdQuotation);
@@ -141,7 +148,35 @@ namespace DHP_Manager.Services.impl
 
         public async Task ValidateQuotationAsync(int id)
         {
-            await _quotationRepository.UpdateQuotationStatusAsync(id, QuotationStatus.VALIDATED);
+            using var transaction = await _quotationRepository.BeginTransactionAsync();
+            try
+            {
+                var quotation = await _quotationRepository.GetQuotationWithDesignationsAsync(id);
+                if (quotation == null)
+                    throw new KeyNotFoundException($"Quotation with ID {id} not found.");
+
+                if (quotation.Status == QuotationStatus.VALIDATED)
+                    throw new InvalidOperationException($"Quotation with ID {id} is already validated.");
+
+                var productQuantities = quotation.Designations
+                    .SelectMany(d => d.DesignationProducts)
+                    .Select(dp => new ProductQuantityInput
+                    {
+                        ProductId = dp.ProductId,
+                        Quantity = dp.Quantity
+                    })
+                    .ToList();
+
+                await _productService.VerifyAndUpdateStockAsync(productQuantities);
+                await _quotationRepository.UpdateQuotationStatusAsync(id, QuotationStatus.VALIDATED);
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<IEnumerable<QuotationResponse>> GetAllQuotationsAsync()
@@ -209,6 +244,7 @@ namespace DHP_Manager.Services.impl
                     }).ToList()
                 }).ToList(),
                 TotalPrice = quotation.TotalPrice, // Use persisted value
+                TotalPriceHT = quotation.TotalPriceHT, // Use persisted value
                 Status = quotation.Status
             };
 
