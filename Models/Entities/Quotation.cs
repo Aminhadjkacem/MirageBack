@@ -24,6 +24,9 @@ namespace DHP_Manager.Models.Entities
 
         [Required]
         public decimal TotalPrice { get; set; } // New field to persist total price
+        
+        [Required]
+        public decimal TotalPriceHT { get; set; } // New field to persist total price hors taxe
 
         // Foreign key for NormalCustomer (nullable)
         public int? NormalCustomerId { get; set; }

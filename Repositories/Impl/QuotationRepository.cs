@@ -3,6 +3,7 @@ using DHP_Manager.Models.Entities;
 using DHP_Manager.Models.ENUM;
 using DHP_Manager.Repositories.Interface;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DHP_Manager.Repositories.Impl
 {
@@ -70,6 +71,11 @@ namespace DHP_Manager.Repositories.Impl
                 throw new KeyNotFoundException($"Quotation with ID {id} not found.");
 
             return quotation;
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
         }
 
         public async Task AddAsync(Quotation quotation)

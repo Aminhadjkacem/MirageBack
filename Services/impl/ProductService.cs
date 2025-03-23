@@ -4,6 +4,7 @@ using DHP_Manager.Models.Entities;
 using DHP_Manager.Models.input;
 using DHP_Manager.Models.Input; // Changed to match updated namespace
 using DHP_Manager.Models.response;
+using DHP_Manager.Repositories.Impl;
 using DHP_Manager.Repositories.Interface;
 using DHP_Manager.Services.Interface;
 using Microsoft.EntityFrameworkCore;
@@ -241,6 +242,43 @@ namespace DHP_Manager.Services.Impl // Changed 'impl' to 'Impl' to follow C# con
             }
 
             return true;
+        }
+
+        public async Task VerifyAndUpdateStockAsync(List<ProductQuantityInput> products)
+        {
+            if (products == null || !products.Any())
+                throw new ArgumentException("Product list cannot be null or empty.", nameof(products));
+
+            var productIds = products.Select(p => p.ProductId).Distinct().ToList();
+            var productEntities = await _productRepository.GetProductsByIdsAsync(productIds);
+
+            var requestedQuantities = products
+                .GroupBy(p => p.ProductId)
+                .Select(g => new
+                {
+                    ProductId = g.Key,
+                    TotalQuantity = g.Sum(p => p.Quantity)
+                });
+
+            // Verify stock availability
+            foreach (var request in requestedQuantities)
+            {
+                if (!productEntities.TryGetValue(request.ProductId, out var product))
+                    throw new InsufficientStockException($"Product with ID {request.ProductId} not found.");
+
+                if (request.TotalQuantity > product.Stock)
+                    throw new InsufficientStockException(
+                        $"Insufficient stock for product '{product.Name}': " +
+                        $"Requested {request.TotalQuantity}, Available {product.Stock}");
+            }
+
+            // Update stock
+            foreach (var request in requestedQuantities)
+            {
+                var product = productEntities[request.ProductId];
+                product.Stock -= request.TotalQuantity;
+                await _productRepository.UpdateAsync(product);
+            }
         }
     }
 }

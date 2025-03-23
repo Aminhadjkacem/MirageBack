@@ -1,5 +1,6 @@
 ﻿using DHP_Manager.Models.Entities;
 using DHP_Manager.Models.ENUM;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DHP_Manager.Repositories.Interface
 {
@@ -13,5 +14,6 @@ namespace DHP_Manager.Repositories.Interface
         Task DeleteAsync(int id);
         Task UpdateQuotationStatusAsync(int id, QuotationStatus status);
         Task<List<Quotation>> GetValidatedQuotationsAsync();
+        Task<IDbContextTransaction> BeginTransactionAsync();
     }
 }

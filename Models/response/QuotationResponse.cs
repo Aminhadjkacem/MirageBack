@@ -11,6 +11,7 @@ namespace DHP_Manager.Models.response
         public object CustomerDetails { get; set; }
         public List<DesignationResponse> Designations { get; set; } = new();
         public decimal TotalPrice { get; set; }
+        public decimal TotalPriceHT { get; set; }
         public QuotationStatus Status { get; set; } // Added Status property
     }
 }
