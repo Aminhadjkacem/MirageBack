@@ -28,10 +28,10 @@ namespace DHP_Manager.Models.input
                 MatriculeFiscal = this.MatriculeFiscal,
                 Contact1Name = this.Contact1Name,
                 Contact1Phone = this.Contact1Phone,
-                Contact2Name = this.Contact1Name,
-                Contact2Phone = this.Contact1Phone,
-                Contact3Name = this.Contact1Name,
-                Contact3Phone = this.Contact1Phone
+                Contact2Name = this.Contact2Name,
+                Contact2Phone = this.Contact2Phone,
+                Contact3Name = this.Contact3Name,
+                Contact3Phone = this.Contact3Phone
             };
         }
         }
