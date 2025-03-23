@@ -14,10 +14,13 @@ namespace DHP_Manager.Controllers
     public class QuotationsController : ControllerBase
     {
         private readonly IQuotationService _quotationService;
+        private readonly ISettingsService _settingsService;
 
-        public QuotationsController(IQuotationService quotationService)
+
+        public QuotationsController(IQuotationService quotationService, ISettingsService settingsService)
         {
             _quotationService = quotationService;
+            _settingsService = settingsService;
         }
 
         [HttpGet]
@@ -60,6 +63,7 @@ namespace DHP_Manager.Controllers
             try
             {
                 await _quotationService.ValidateQuotationAsync(id);
+                await _settingsService.UpdateFactureId();
                 return NoContent();
             }
             catch (KeyNotFoundException ex)

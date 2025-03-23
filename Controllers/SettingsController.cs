@@ -16,6 +16,31 @@ namespace DHP_Manager.Controllers
             _settingsService = settingsService;
         }
 
+        [HttpGet("all-settings")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetAllSettings()
+        {
+            try
+            {
+                var settings = new
+                {
+                    ProfitMargin = await _settingsService.GetProfitMarginAsync() * 100,
+                    TVAMargin = await _settingsService.GetTVAMarginAsync() * 100,
+                    DroitDuTimbrePrice = await _settingsService.GetDroitDuTimbrePriceAsync(),
+                    CompanyTel = await _settingsService.GetCompanyTelAsync(),
+                    CompanyFiscal = await _settingsService.GetCompanyFiscalAsync(),
+                    FactureId = await _settingsService.GetFactureIdAsync()
+                };
+
+                return Ok(settings);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         [HttpPut("profit-margin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -23,7 +48,7 @@ namespace DHP_Manager.Controllers
         {
             try
             {
-                await _settingsService.UpdateProfitMarginAsync(newMargin);
+                await _settingsService.UpdateProfitMarginAsync(newMargin / 100);
                 return NoContent();
             }
             catch (ArgumentException ex)
@@ -39,7 +64,7 @@ namespace DHP_Manager.Controllers
         {
             try
             {
-                await _settingsService.UpdateTVAMarginAsync(newMargin);
+                await _settingsService.UpdateTVAMarginAsync(newMargin / 100);
                 return NoContent();
             }
             catch (ArgumentException ex)
@@ -63,5 +88,38 @@ namespace DHP_Manager.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpPut("company-tel")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UpdateCompanyTel([FromBody] string companyTel)
+        {
+            try
+            {
+                await _settingsService.UpdateCompanyTelAsync(companyTel);
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut("company-fiscal")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UpdateCompanyFiscal([FromBody] string companyFiscal)
+        {
+            try
+            {
+                await _settingsService.UpdateCompanyFiscalAsync(companyFiscal);
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        
     }
 }

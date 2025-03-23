@@ -11,6 +11,6 @@ namespace DHP_Manager.Models.Entities
         public required string Key { get; set; } // e.g., "ProfitMargin"
 
         [Required]
-        public required decimal Value { get; set; } // The profit margin value (e.g., 0.3 for 30%)
+        public required string Value { get; set; } // The profit margin value (e.g., 0.3 for 30%)
     }
 }

@@ -24,11 +24,11 @@ namespace DHP_Manager.Repositories.Impl
             if (setting == null)
             {
                 var defaultMargin = 0.3m; // 30% default
-                await _context.Settings.AddAsync(new Settings { Key = "ProfitMargin", Value = defaultMargin });
+                await _context.Settings.AddAsync(new Settings { Key = "ProfitMargin", Value = defaultMargin.ToString() });
                 await _context.SaveChangesAsync();
                 return defaultMargin;
             }
-            return setting.Value;
+            return decimal.Parse(setting.Value);
         }
 
         public async Task UpdateProfitMarginAsync(decimal newMargin)
@@ -38,12 +38,12 @@ namespace DHP_Manager.Repositories.Impl
 
             if (setting == null)
             {
-                setting = new Settings { Key = "ProfitMargin", Value = newMargin };
+                setting = new Settings { Key = "ProfitMargin", Value = newMargin.ToString() };
                 await _context.Settings.AddAsync(setting);
             }
             else
             {
-                setting.Value = newMargin;
+                setting.Value = newMargin.ToString();
             }
             await _context.SaveChangesAsync();
         }
@@ -56,11 +56,11 @@ namespace DHP_Manager.Repositories.Impl
             if (setting == null)
             {
                 var defaultMargin = 0.19m; // 19% default (common TVA rate, adjust as needed)
-                await _context.Settings.AddAsync(new Settings { Key = "TVAMargin", Value = defaultMargin });
+                await _context.Settings.AddAsync(new Settings { Key = "TVAMargin", Value = defaultMargin.ToString() });
                 await _context.SaveChangesAsync();
                 return defaultMargin;
             }
-            return setting.Value;
+            return decimal.Parse(setting.Value);
         }
 
         public async Task UpdateTVAMarginAsync(decimal newMargin)
@@ -70,12 +70,12 @@ namespace DHP_Manager.Repositories.Impl
 
             if (setting == null)
             {
-                setting = new Settings { Key = "TVAMargin", Value = newMargin };
+                setting = new Settings { Key = "TVAMargin", Value = newMargin.ToString() };
                 await _context.Settings.AddAsync(setting);
             }
             else
             {
-                setting.Value = newMargin;
+                setting.Value = newMargin.ToString();
             }
             await _context.SaveChangesAsync();
         }
@@ -88,11 +88,11 @@ namespace DHP_Manager.Repositories.Impl
             if (setting == null)
             {
                 var defaultPrice = 0.6m; // 0.6 TND default (common in Tunisia, adjust as needed)
-                await _context.Settings.AddAsync(new Settings { Key = "DroitDuTimbrePrice", Value = defaultPrice });
+                await _context.Settings.AddAsync(new Settings { Key = "DroitDuTimbrePrice", Value = defaultPrice.ToString() });
                 await _context.SaveChangesAsync();
                 return defaultPrice;
             }
-            return setting.Value;
+            return decimal.Parse(setting.Value);
         }
 
         public async Task UpdateDroitDuTimbrePriceAsync(decimal newPrice)
@@ -102,14 +102,103 @@ namespace DHP_Manager.Repositories.Impl
 
             if (setting == null)
             {
-                setting = new Settings { Key = "DroitDuTimbrePrice", Value = newPrice };
+                setting = new Settings { Key = "DroitDuTimbrePrice", Value = newPrice.ToString() };
                 await _context.Settings.AddAsync(setting);
             }
             else
             {
-                setting.Value = newPrice;
+                setting.Value = newPrice.ToString();
             }
             await _context.SaveChangesAsync();
+        }
+        public async Task UpdateCompanyTelAsync(string newTel)
+        {
+            var setting = await _context.Settings
+                .FirstOrDefaultAsync(s => s.Key == "CompanyTel");
+
+            if (setting == null)
+            {
+                setting = new Settings { Key = "CompanyTel", Value = newTel };
+                await _context.Settings.AddAsync(setting);
+            }
+            else
+            {
+                setting.Value = newTel;
+            }
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<string> GetCompanyTelAsync()
+        {
+            var setting = await _context.Settings
+                .FirstOrDefaultAsync(s => s.Key == "CompanyTel");
+
+            if (setting == null)
+            {
+                throw new KeyNotFoundException("CompanyTel setting not found.");
+            }
+            return setting.Value;
+        }
+
+        public async Task UpdateCompanyFiscalAsync(string newFiscal)
+        {
+            var setting = await _context.Settings
+                .FirstOrDefaultAsync(s => s.Key == "CompanyFiscal");
+
+            if (setting == null)
+            {
+                setting = new Settings { Key = "CompanyFiscal", Value = newFiscal };
+                await _context.Settings.AddAsync(setting);
+            }
+            else
+            {
+                setting.Value = newFiscal;
+            }
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<string> GetCompanyFiscalAsync()
+        {
+            var setting = await _context.Settings
+                .FirstOrDefaultAsync(s => s.Key == "CompanyFiscal");
+
+            if (setting == null)
+            {
+                throw new KeyNotFoundException("CompanyFiscal setting not found.");
+            }
+            return setting.Value;
+        }
+        public async Task UpdateFactureIdAsync()
+        {
+            var setting = await _context.Settings
+                .FirstOrDefaultAsync(s => s.Key == "FactureId");
+
+            if (setting == null)
+            {
+                // If it doesn't exist, create it with an initial value of 1
+                setting = new Settings { Key = "FactureId", Value = "1" };
+                await _context.Settings.AddAsync(setting);
+            }
+            else
+            {
+                // If it exists, increment the current value
+                int count = int.Parse(setting.Value);
+                setting.Value = (count + 1).ToString();
+                _context.Settings.Update(setting); // Explicitly mark as updated (optional, EF tracks changes)
+            }
+
+            await _context.SaveChangesAsync();
+        }
+        public async Task<int> GetFactureIdAsync()
+        {
+            var setting = await _context.Settings
+                .FirstOrDefaultAsync(s => s.Key == "FactureId");
+
+            if (setting == null)
+            {
+                throw new KeyNotFoundException("FactureId setting not found.");
+            }
+            return int.Parse(setting.Value);
         }
     }
 }

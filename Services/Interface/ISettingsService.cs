@@ -4,9 +4,16 @@
     {
         Task<decimal> GetProfitMarginAsync();
         Task UpdateProfitMarginAsync(decimal newMargin);
-        Task<decimal> GetTVAMarginAsync(); // New method
-        Task UpdateTVAMarginAsync(decimal newMargin); // New method
-        Task<decimal> GetDroitDuTimbrePriceAsync(); // New method
-        Task UpdateDroitDuTimbrePriceAsync(decimal newPrice); // New method
+        Task<decimal> GetTVAMarginAsync();
+        Task UpdateTVAMarginAsync(decimal newMargin);
+        Task<decimal> GetDroitDuTimbrePriceAsync();
+        Task UpdateDroitDuTimbrePriceAsync(decimal newPrice);
+        Task UpdateCompanyFiscalAsync(string newFiscal);
+        Task UpdateCompanyTelAsync(string newTel);
+        Task<string> GetCompanyTelAsync();
+
+        Task<string> GetCompanyFiscalAsync();
+        Task UpdateFactureId();
+        Task<int> GetFactureIdAsync();
     }
 }
