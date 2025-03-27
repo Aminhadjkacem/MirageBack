@@ -19,7 +19,7 @@ namespace DHP_Manager.Services.Interface
         Task UpdateProductStocksAsync(Dictionary<int, int> productQuantities);
         Task AddProductToDesignationAsync(int productId, int designationId, int quantity); // New method
         Task RemoveProductFromDesignationAsync(int productId, int designationId); // New method
-        Task<bool> VerifyStockAsync(List<ProductQuantityInput> products); // New overload
-        Task VerifyAndUpdateStockAsync(List<ProductQuantityInput> products); // New method
+        Task<bool> VerifyStockAsync(List<ProductQuantityInput> products, int designationQuantity);
+        Task VerifyAndUpdateStockAsync(List<ProductQuantityInput> products);
     }
 }

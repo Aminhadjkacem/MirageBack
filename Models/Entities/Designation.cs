@@ -24,5 +24,7 @@ namespace DHP_Manager.Models.Entities
         // ✅ Add the missing CreatedAt field
         [Required]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        [Required]
+        public int Quantity { get; set; }
     }
 }

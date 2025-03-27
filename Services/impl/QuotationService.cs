@@ -45,9 +45,12 @@ namespace DHP_Manager.Services.impl
             if (string.IsNullOrWhiteSpace(quotationInput.ProjectName))
                 throw new ArgumentException("Project name cannot be empty", nameof(quotationInput.ProjectName));
 
-            // Check stock availability
-            if (!await _productService.VerifyStockAsync(quotationInput.Designations.SelectMany(d => d.Products).ToList()))
-                throw new InsufficientStockException("Not enough stock for one or more products.");
+            // **Check stock availability considering designation quantity**
+            foreach (var designation in quotationInput.Designations)
+            {
+                if (!await _productService.VerifyStockAsync(designation.Products, designation.Quantity))
+                    throw new InsufficientStockException($"Not enough stock for one or more products in designation '{designation.Name}'.");
+            }
 
             // Validate customer exists based on CustomerType
             if (quotationInput.CustomerType == CustomerType.NORMAL)
@@ -85,7 +88,8 @@ namespace DHP_Manager.Services.impl
                 var designation = new Designation
                 {
                     Name = designationInput.Name,
-                    DesignationProducts = new List<DesignationProduct>()
+                    DesignationProducts = new List<DesignationProduct>(),
+                    Quantity = designationInput.Quantity,
                 };
 
                 // Group products by ProductId and sum quantities
@@ -96,6 +100,8 @@ namespace DHP_Manager.Services.impl
                         ProductId = g.Key,
                         TotalQuantity = g.Sum(p => p.Quantity)
                     });
+
+                decimal designationTotalPrice = 0m; // Store total price for this designation
 
                 foreach (var productGroup in productGroups)
                 {
@@ -109,8 +115,12 @@ namespace DHP_Manager.Services.impl
                         Quantity = productGroup.TotalQuantity
                     });
 
-                    basePrice += product.Price * productGroup.TotalQuantity;
+                    // Calculate price for the product group and apply designation quantity
+                    designationTotalPrice += product.Price * productGroup.TotalQuantity;
                 }
+
+                // Multiply the total price of products in this designation by its quantity
+                basePrice += designationTotalPrice * designationInput.Quantity;
 
                 quotation.Designations.Add(designation);
             }
@@ -135,6 +145,7 @@ namespace DHP_Manager.Services.impl
             var createdQuotation = await _quotationRepository.GetQuotationWithDesignationsAsync(quotation.Id);
             return MapToResponse(createdQuotation);
         }
+
         public async Task<Quotation> GetQuotationAsync(int id)
         {
             return await _quotationRepository.GetByIdAsync(id);
@@ -159,15 +170,16 @@ namespace DHP_Manager.Services.impl
                     throw new InvalidOperationException($"Quotation with ID {id} is already validated.");
 
                 var productQuantities = quotation.Designations
-                    .SelectMany(d => d.DesignationProducts)
-                    .Select(dp => new ProductQuantityInput
-                    {
-                        ProductId = dp.ProductId,
-                        Quantity = dp.Quantity
-                    })
+                    .SelectMany(d => d.DesignationProducts
+                        .Select(dp => new ProductQuantityInput
+                        {
+                            ProductId = dp.ProductId,
+                            Quantity = dp.Quantity * d.Quantity // Multiply by designation quantity
+                        }))
                     .ToList();
 
                 await _productService.VerifyAndUpdateStockAsync(productQuantities);
+
                 await _quotationRepository.UpdateQuotationStatusAsync(id, QuotationStatus.VALIDATED);
 
                 await transaction.CommitAsync();
@@ -178,6 +190,7 @@ namespace DHP_Manager.Services.impl
                 throw;
             }
         }
+
 
         public async Task<IEnumerable<QuotationResponse>> GetAllQuotationsAsync()
         {
@@ -236,6 +249,7 @@ namespace DHP_Manager.Services.impl
                 {
                     Id = d.Id,
                     Name = d.Name,
+                    Quantity = d.Quantity,
                     Products = d.DesignationProducts.Select(dp => new ProductQuantityResponse
                     {
                         ProductId = dp.ProductId,

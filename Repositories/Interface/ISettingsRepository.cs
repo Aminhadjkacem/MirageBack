@@ -14,5 +14,10 @@
         Task<string> GetCompanyFiscalAsync();
         Task UpdateFactureIdAsync();
         Task<int> GetFactureIdAsync();
+
+        Task UpdateCompanyRibAsync(string companyRib);
+        Task UpdateBankNameAsync(string bankName);
+        Task<string?> GetBankNameAsync();
+        Task<string?> GetCompanyRibAsync();
     }
 }

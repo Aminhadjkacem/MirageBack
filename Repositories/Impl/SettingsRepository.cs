@@ -87,7 +87,7 @@ namespace DHP_Manager.Repositories.Impl
 
             if (setting == null)
             {
-                var defaultPrice = 0.6m; // 0.6 TND default (common in Tunisia, adjust as needed)
+                var defaultPrice = 1m; // 1 TND default (common in Tunisia, adjust as needed)
                 await _context.Settings.AddAsync(new Settings { Key = "DroitDuTimbrePrice", Value = defaultPrice.ToString() });
                 await _context.SaveChangesAsync();
                 return defaultPrice;
@@ -199,6 +199,62 @@ namespace DHP_Manager.Repositories.Impl
                 throw new KeyNotFoundException("FactureId setting not found.");
             }
             return int.Parse(setting.Value);
+        }
+
+        public async Task UpdateCompanyRibAsync(string newRib)
+        {
+            var setting = await _context.Settings
+                .FirstOrDefaultAsync(s => s.Key == "CompanyRIB");
+
+            if (setting == null)
+            {
+                setting = new Settings { Key = "CompanyRIB", Value = newRib };
+                await _context.Settings.AddAsync(setting);
+            }
+            else
+            {
+                setting.Value = newRib;
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateBankNameAsync(string newBankName)
+        {
+            var setting = await _context.Settings
+                .FirstOrDefaultAsync(s => s.Key == "BankName");
+
+            if (setting == null)
+            {
+                setting = new Settings { Key = "BankName", Value = newBankName };
+                await _context.Settings.AddAsync(setting);
+            }
+            else
+            {
+                setting.Value = newBankName;
+            }
+
+            await _context.SaveChangesAsync();
+        }
+        public async Task<string> GetCompanyRibAsync()
+        {
+            var setting = await _context.Settings.FirstOrDefaultAsync(s => s.Key == "CompanyRIB");
+
+            if (setting == null)
+            {
+                throw new KeyNotFoundException("CompanyRIB setting not found.");
+            }
+            return setting.Value;
+        }
+        public async Task<string> GetBankNameAsync()
+        {
+            var setting = await _context.Settings.FirstOrDefaultAsync(s => s.Key == "BankName");
+
+            if (setting == null)
+            {
+                throw new KeyNotFoundException("BankName setting not found.");
+            }
+            return setting.Value;
         }
     }
 }

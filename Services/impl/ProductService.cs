@@ -214,7 +214,7 @@ namespace DHP_Manager.Services.Impl // Changed 'impl' to 'Impl' to follow C# con
             product.DesignationProducts.Remove(designationProduct);
             await _productRepository.UpdateAsync(product);
         }
-        public async Task<bool> VerifyStockAsync(List<ProductQuantityInput> products)
+        public async Task<bool> VerifyStockAsync(List<ProductQuantityInput> products, int designationQuantity)
         {
             if (products == null || !products.Any())
                 throw new ArgumentException("Product list cannot be null or empty.", nameof(products));
@@ -227,7 +227,7 @@ namespace DHP_Manager.Services.Impl // Changed 'impl' to 'Impl' to follow C# con
                 .Select(g => new
                 {
                     ProductId = g.Key,
-                    TotalQuantity = g.Sum(p => p.Quantity)
+                    TotalQuantity = g.Sum(p => p.Quantity) * designationQuantity // Multiply by designation quantity
                 });
 
             foreach (var request in requestedQuantities)
@@ -243,6 +243,7 @@ namespace DHP_Manager.Services.Impl // Changed 'impl' to 'Impl' to follow C# con
 
             return true;
         }
+
 
         public async Task VerifyAndUpdateStockAsync(List<ProductQuantityInput> products)
         {
@@ -280,5 +281,6 @@ namespace DHP_Manager.Services.Impl // Changed 'impl' to 'Impl' to follow C# con
                 await _productRepository.UpdateAsync(product);
             }
         }
+
     }
 }
