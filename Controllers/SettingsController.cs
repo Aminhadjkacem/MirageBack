@@ -30,7 +30,9 @@ namespace DHP_Manager.Controllers
                     DroitDuTimbrePrice = await _settingsService.GetDroitDuTimbrePriceAsync(),
                     CompanyTel = await _settingsService.GetCompanyTelAsync(),
                     CompanyFiscal = await _settingsService.GetCompanyFiscalAsync(),
-                    FactureId = await _settingsService.GetFactureIdAsync()
+                    FactureId = await _settingsService.GetFactureIdAsync(),
+                    BankName = await _settingsService.GetBankNameAsync(),
+                    BankRib = await _settingsService.GetCompanyRibAsync(),
                 };
 
                 return Ok(settings);
@@ -120,6 +122,39 @@ namespace DHP_Manager.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        
+
+        [HttpPut("company-rib")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UpdateCompanyRib([FromBody] string companyRib)
+        {
+            try
+            {
+                await _settingsService.UpdateCompanyRibAsync(companyRib);
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut("bank-name")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UpdateBankName([FromBody] string bankName)
+        {
+            try
+            {
+                await _settingsService.UpdateBankNameAsync(bankName);
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+
     }
 }

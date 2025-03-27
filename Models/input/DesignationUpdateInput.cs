@@ -9,6 +9,8 @@ namespace DHP_Manager.Models.input
 
         [Required]
         public required string Name { get; set; }
+        [Required]
+        public int Quantity { get; set; }
 
         public List<ProductQuantityUpdateInput> Products { get; set; } = new();
 
@@ -25,6 +27,7 @@ namespace DHP_Manager.Models.input
 
             designation.Id = input.Id;
             designation.Name = input.Name;
+            designation.Quantity = input.Quantity;
             designation.QuotationId = quotationId; // Ensure it’s set even for existing designations
 
             if (input.Products != null && existingDesignation == null)

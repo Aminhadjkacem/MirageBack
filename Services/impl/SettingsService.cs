@@ -75,5 +75,31 @@ namespace DHP_Manager.Services.impl
         {
             return await _settingsRepository.GetFactureIdAsync();
         }
+
+        public async Task UpdateCompanyRibAsync(string companyRib)
+        {
+            if (string.IsNullOrWhiteSpace(companyRib))
+                throw new ArgumentException("Company RIB cannot be empty.", nameof(companyRib));
+
+            await _settingsRepository.UpdateCompanyRibAsync(companyRib);
+        }
+
+        public async Task UpdateBankNameAsync(string bankName)
+        {
+            if (string.IsNullOrWhiteSpace(bankName))
+                throw new ArgumentException("Bank name cannot be empty.", nameof(bankName));
+
+            await _settingsRepository.UpdateBankNameAsync(bankName);
+        }
+
+        public async Task<string> GetBankNameAsync()
+        {
+            return await _settingsRepository.GetBankNameAsync();
+        }
+
+        public async Task<string> GetCompanyRibAsync()
+        {
+            return await _settingsRepository.GetCompanyRibAsync();
+        }
     }
 }
