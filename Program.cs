@@ -69,6 +69,8 @@ builder.Services.AddScoped<ISettingsRepository, SettingsRepository>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<IJwtUtils, JwtUtils>();
 builder.Services.AddScoped<IPdfGenerationService, PdfGenerationService>();
+builder.Services.AddScoped<IDevisPDFGeneratorService, DevisPDFGeneratorService>();
+
 // CORS
 builder.Services.AddCors(options =>
 {

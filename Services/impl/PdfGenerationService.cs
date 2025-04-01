@@ -3,17 +3,29 @@ using PdfSharp.Pdf;
 using System.IO;
 using DHP_Manager.Models.input;
 using DHP_Manager.Services.Interface;
+using DHP_Manager.Models.ENUM;
 
 namespace DHP_Manager.Services.impl
 {
     public class PdfGenerationService : IPdfGenerationService
     {
         private readonly ISettingsService _settingsService;
+        private readonly IProductService _productService;
+        private readonly INormalCustomerService _normalCustomerService;
+        private readonly ICompanyCustomerService _companyCustomerService;
 
-        public PdfGenerationService(ISettingsService settingsService)
+        public PdfGenerationService(
+            ISettingsService settingsService,
+            IProductService productService,
+            INormalCustomerService normalCustomerService,
+            ICompanyCustomerService companyCustomerService)
         {
             _settingsService = settingsService;
+            _productService = productService;
+            _normalCustomerService = normalCustomerService;
+            _companyCustomerService = companyCustomerService;
         }
+
         public byte[] GenerateQuotationPdf(QuotationUpdateInput quotation)
         {
             using var document = new PdfDocument();
@@ -27,42 +39,149 @@ namespace DHP_Manager.Services.impl
             var orangeBrush = XBrushes.Orange;
             var blackBrush = XBrushes.Black;
 
-            // Header: Draw logo (assuming logo.png is in the specified path)
+            // Header: Draw logo
             string logoPath = Path.Combine(Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.Parent.FullName, "Services", "impl", "logo.png");
             if (File.Exists(logoPath))
             {
                 var logo = XImage.FromFile(logoPath);
-                if (logo != null && logo.Height > 0) // Vérification avant le calcul
+                if (logo != null && logo.Height > 0)
                 {
-                    int newHeight = 40; // Hauteur fixe
-                    int newWidth = (int)((double)(logo.Width) * newHeight / logo.Height); // Largeur ajustée proportionnellement
+                    int newHeight = 40;
+                    int newWidth = (int)((double)(logo.Width) * newHeight / logo.Height);
                     gfx.DrawImage(logo, 50, 20, newWidth, newHeight);
                 }
             }
 
             int currentYear = DateTime.Now.Year;
 
-            // Create the text for invoice number and quotation ID
+            // Invoice number and quotation ID
             string invoiceNumberText = $"Facture";
-            string quotationIdText = $"N°: 00{quotation.Id}/{currentYear}"; // Quotation ID text
-
-            XFont fontInvoiceNumber = new XFont("Arial", 20); // Larger font for "Facture N°"
-            XFont fontQuotationId = new XFont("Arial", 10); // Larger font for the quotation ID
+            string quotationIdText = $"N°: 00{quotation.Id}/{currentYear}";
+            
+            XFont fontInvoiceNumber = new XFont("Arial", 20);
+            XFont fontQuotationId = new XFont("Arial", 10);
             var textWidthInvoice = gfx.MeasureString(invoiceNumberText, fontInvoiceNumber).Width;
             var textWidthQuotationId = gfx.MeasureString(quotationIdText, fontQuotationId).Width;
 
             gfx.DrawString(invoiceNumberText, fontInvoiceNumber, orangeBrush, new XRect(page.Width - textWidthInvoice - 50, 30, page.Width, page.Height), XStringFormats.TopLeft);
             gfx.DrawString(quotationIdText, fontQuotationId, blackBrush, new XRect(page.Width - textWidthQuotationId - 50, 30 + fontInvoiceNumber.Height + 5, page.Width, page.Height), XStringFormats.TopLeft);
 
-            // Header: Draw the horizontal line
+            // Header line
             var penBlue = new XPen(XColors.DarkBlue, 1);
             var penOrange = new XPen(XColors.Orange, 1);
             gfx.DrawLine(penBlue, 50, 70, page.Width / 2, 70);
             gfx.DrawLine(penOrange, page.Width / 2, 70, page.Width - 50, 70);
 
-            // Table: Define positions and dimensions
-            double tableStartY = 100;
-            double tableWidth = page.Width - 100; // 50 margin on each side
+            // Company Details (left side)
+            double companyDetailsY = 80;
+            double companyDetailsX = 50;
+            double lineHeight = 12;
+
+            // Fetch company details from settings service
+            string companyTel = _settingsService.GetCompanyTelAsync().Result;
+            string companyFiscal = _settingsService.GetCompanyFiscalAsync().Result;
+            string bankName = _settingsService.GetBankNameAsync().Result;
+            string companyRIB = _settingsService.GetCompanyRibAsync().Result;
+            string invoiceDate = DateTime.Now.ToString("dd/MM/yyyy");
+
+            // Measure company details width
+            double telWidth = gfx.MeasureString($"TEL: {companyTel}", smallFont).Width;
+            double fiscalWidth = gfx.MeasureString($"MF: {companyFiscal}", smallFont).Width;
+            double bankWidth = gfx.MeasureString($"Banque: {bankName}", smallFont).Width;
+            double ribWidth = gfx.MeasureString($"RIB: {companyRIB}", smallFont).Width;
+            double dateWidth = gfx.MeasureString($"Date: {invoiceDate}", smallFont).Width;
+
+            double maxCompanyWidth = Math.Max(telWidth, Math.Max(fiscalWidth, Math.Max(bankWidth, Math.Max(ribWidth, dateWidth))));
+            double companyLineEndX = companyDetailsX + maxCompanyWidth + 10;
+
+            // Draw company details
+            gfx.DrawString($"TEL: {companyTel}", smallFont, blackBrush, new XPoint(companyDetailsX, companyDetailsY), XStringFormats.TopLeft);
+            companyDetailsY += lineHeight;
+            gfx.DrawString($"MF: {companyFiscal}", smallFont, blackBrush, new XPoint(companyDetailsX, companyDetailsY), XStringFormats.TopLeft);
+            companyDetailsY += lineHeight;
+            gfx.DrawString($"Banque: {bankName}", smallFont, blackBrush, new XPoint(companyDetailsX, companyDetailsY), XStringFormats.TopLeft);
+            companyDetailsY += lineHeight;
+            gfx.DrawString($"RIB: {companyRIB}", smallFont, blackBrush, new XPoint(companyDetailsX, companyDetailsY), XStringFormats.TopLeft);
+            companyDetailsY += lineHeight;
+
+            double companyLineY = companyDetailsY + 5;
+            double companyMidPoint = companyDetailsX + (companyLineEndX - companyDetailsX) / 2;
+            gfx.DrawLine(penBlue, companyDetailsX, companyLineY, companyMidPoint, companyLineY);
+            gfx.DrawLine(penOrange, companyMidPoint, companyLineY, companyLineEndX, companyLineY);
+
+            companyDetailsY += lineHeight + 5;
+            gfx.DrawString($"Date: {invoiceDate}", smallFont, blackBrush, new XPoint(companyDetailsX, companyDetailsY), XStringFormats.TopLeft);
+
+            // Customer Details (right side, in a box, left-aligned)
+            double customerDetailsY = 80; // Same Y as company details for symmetry
+            double customerDetailsX = page.Width - 50 - maxCompanyWidth - 20; // Position to match company details width + padding
+            double customerLineHeight = 12;
+            double padding = 5; // Padding inside the box
+
+            // Fetch customer details based on CustomerType
+            string clientName = "";
+            string address = "";
+            string ville = "";
+            string matriculeFiscal = "";
+
+            if (quotation.CustomerType == CustomerType.COMPANY)
+            {
+                var companyCustomer = _companyCustomerService.GetByIdAsync(quotation.CustomerId).Result;
+                if (companyCustomer != null)
+                {
+                    clientName = companyCustomer.CompanyName;
+                    address = companyCustomer.Address;
+                    ville = companyCustomer.Ville;
+                    matriculeFiscal = companyCustomer.MatriculeFiscal;
+                }
+            }
+            else if (quotation.CustomerType == CustomerType.NORMAL)
+            {
+                var normalCustomer = _normalCustomerService.GetByIdAsync(quotation.CustomerId).Result;
+                if (normalCustomer != null)
+                {
+                    clientName = normalCustomer.FullName;
+                    address = normalCustomer.Address;
+                }
+            }
+
+            // Measure customer details width
+            double clientWidth = gfx.MeasureString($"Client: {clientName}", smallFont).Width;
+            double addressWidth = gfx.MeasureString($"Adresse: {address}", smallFont).Width;
+            double villeWidth = quotation.CustomerType == CustomerType.COMPANY ? gfx.MeasureString($"Ville: {ville}", smallFont).Width : 0;
+            double mfWidth = quotation.CustomerType == CustomerType.COMPANY ? gfx.MeasureString($"MF: {matriculeFiscal}", smallFont).Width : 0;
+
+            double maxCustomerWidth = Math.Max(clientWidth, Math.Max(addressWidth, Math.Max(villeWidth, mfWidth)));
+            double boxWidth = maxCustomerWidth + 2 * padding; // Add padding on both sides
+            double boxHeight = quotation.CustomerType == CustomerType.COMPANY ? (4 * customerLineHeight + 2 * padding) : (2 * customerLineHeight + 2 * padding); // Height based on number of lines
+
+            // Draw the box
+            double boxX = customerDetailsX - padding; // Start of the box
+            double boxY = customerDetailsY - padding; // Top of the box
+            gfx.DrawRectangle(XPens.Black, boxX, boxY, boxWidth, boxHeight);
+
+            // Draw customer details (left-aligned inside the box)
+            double textX = customerDetailsX; // Left-aligned inside the box
+            double textY = customerDetailsY; // Start text inside the box
+
+            gfx.DrawString($"Client: {clientName}", smallFont, blackBrush, new XPoint(textX, textY), XStringFormats.TopLeft);
+            textY += customerLineHeight;
+            gfx.DrawString($"Adresse: {address}", smallFont, blackBrush, new XPoint(textX, textY), XStringFormats.TopLeft);
+
+            if (quotation.CustomerType == CustomerType.COMPANY)
+            {
+                textY += customerLineHeight;
+                gfx.DrawString($"Ville: {ville}", smallFont, blackBrush, new XPoint(textX, textY), XStringFormats.TopLeft);
+                textY += customerLineHeight;
+                gfx.DrawString($"MF: {matriculeFiscal}", smallFont, blackBrush, new XPoint(textX, textY), XStringFormats.TopLeft);
+            }
+
+            // Update customerDetailsY to the bottom of the box for table positioning
+            customerDetailsY = boxY + boxHeight + padding;
+
+            // Table setup (adjust start Y to account for the taller section)
+            double tableStartY = Math.Max(companyDetailsY, customerDetailsY) + 20; // Use the taller section's Y
+            double tableWidth = page.Width - 100;
             double col1Width = tableWidth * 0.3; // Désignation
             double col2Width = tableWidth * 0.1; // Qté
             double col3Width = tableWidth * 0.2; // P.U.H.T
@@ -71,7 +190,7 @@ namespace DHP_Manager.Services.impl
             double rowHeight = 20;
             double currentY = tableStartY;
 
-            // Table Header (with the new TVA % column)
+            // Table Header
             gfx.DrawRectangle(new XSolidBrush(XColors.Orange), 50, currentY, tableWidth, rowHeight);
             gfx.DrawString("Désignation", font, blackBrush, new XRect(50, currentY, col1Width, rowHeight), XStringFormats.Center);
             gfx.DrawString("Qté", font, blackBrush, new XRect(50 + col1Width, currentY, col2Width, rowHeight), XStringFormats.Center);
@@ -80,49 +199,54 @@ namespace DHP_Manager.Services.impl
             gfx.DrawString("TVA %", font, blackBrush, new XRect(50 + col1Width + col2Width + col3Width + col4Width, currentY, col5Width, rowHeight), XStringFormats.Center);
             currentY += rowHeight;
 
-            string tvaPercentage = (_settingsService.GetTVAMarginAsync().Result * 100).ToString() + "%"; // Get the TVA margin from the settings
-
-            // Calculate the total quantity across all designations to determine the unit price
-            int totalQuantityAcrossAll = quotation.Designations?.Sum(d => d.Products?.Sum(p => p.Quantity) ?? 0) ?? 0;
-            decimal averageUnitPrice = totalQuantityAcrossAll > 0 ? quotation.TotalPriceHT / totalQuantityAcrossAll : 0m;
+            string tvaPercentage = (_settingsService.GetTVAMarginAsync().Result * 100).ToString() + "%";
+            decimal profitMargin = _settingsService.GetProfitMarginAsync().Result;
 
             // Table Data
+            decimal totalHTBrut = 0m;
             if (quotation.Designations != null && quotation.Designations.Any())
             {
                 foreach (var designation in quotation.Designations)
                 {
-                    // Ensure designation is not null
                     if (designation == null || string.IsNullOrEmpty(designation.Name))
                     {
-                        continue; // Skip invalid designations
+                        continue;
                     }
 
-                    // Calculate total quantity for the designation
-                    int totalQuantity = designation.Products?.Sum(p => p.Quantity) ?? 0;
+                    // Calculate base price for this designation
+                    decimal designationBasePrice = 0m;
+                    if (designation.Products != null)
+                    {
+                        foreach (var productInput in designation.Products)
+                        {
+                            var product = _productService.GetProductByIdAsync(productInput.ProductId).Result;
+                            if (product != null)
+                            {
+                                designationBasePrice += product.Price * productInput.Quantity;
+                            }
+                        }
+                    }
 
-                    // Calculate total HT for the designation using the average unit price
-                    double totalHT = (double)(averageUnitPrice * totalQuantity);
+                    // Apply designation quantity and profit margin
+                    decimal designationHT = designationBasePrice * designation.Quantity * (1 + profitMargin);
 
-                    // Use the average unit price for P.U.H.T
-                    string unitPriceText = averageUnitPrice.ToString("F1");
+                    totalHTBrut += designationHT;
 
-                    // Adjusted column positions (shifted slightly to the right)
-                    double offsetX = 18; // Small shift to the right
+                    double offsetX = 18;
+                    string unitPriceText = (designationBasePrice * (1 + profitMargin)).ToString("F1");
+                    string totalHTText = designationHT.ToString("F1");
 
-                    // Calculate TVA % for each row (just showing the global percentage for this example)
-                    string tvaText = tvaPercentage;
-
-                    // Draw the row data with an adjusted X position
+                    // Draw row
                     gfx.DrawString(designation.Name, smallFont, blackBrush, new XPoint(50 + offsetX, currentY + rowHeight / 2), XStringFormats.CenterLeft);
-                    gfx.DrawString(totalQuantity.ToString(), smallFont, blackBrush, new XPoint(50 + col1Width + offsetX, currentY + rowHeight / 2), XStringFormats.Center);
+                    gfx.DrawString(designation.Quantity.ToString(), smallFont, blackBrush, new XPoint(50 + col1Width + offsetX, currentY + rowHeight / 2), XStringFormats.Center);
                     gfx.DrawString(unitPriceText, smallFont, blackBrush, new XPoint(50 + col1Width + col2Width + offsetX, currentY + rowHeight / 2), XStringFormats.Center);
-                    gfx.DrawString(totalHT.ToString("F1"), smallFont, blackBrush, new XPoint(50 + col1Width + col2Width + col3Width + offsetX, currentY + rowHeight / 2), XStringFormats.Center);
-                    gfx.DrawString(tvaText, smallFont, blackBrush, new XPoint(50 + col1Width + col2Width + col3Width + col4Width + offsetX, currentY + rowHeight / 2), XStringFormats.Center);
+                    gfx.DrawString(totalHTText, smallFont, blackBrush, new XPoint(50 + col1Width + col2Width + col3Width + offsetX, currentY + rowHeight / 2), XStringFormats.Center);
+                    gfx.DrawString(tvaPercentage, smallFont, blackBrush, new XPoint(50 + col1Width + col2Width + col3Width + col4Width + offsetX, currentY + rowHeight / 2), XStringFormats.Center);
                     currentY += rowHeight;
                 }
             }
 
-            // Draw table borders
+            // Table borders
             double tableEndY = currentY;
             gfx.DrawRectangle(XPens.Black, 50, tableStartY, tableWidth, tableEndY - tableStartY);
             gfx.DrawLine(XPens.Black, 50 + col1Width, tableStartY, 50 + col1Width, tableEndY);
@@ -135,43 +259,36 @@ namespace DHP_Manager.Services.impl
                 gfx.DrawLine(XPens.Black, 50, y, 50 + tableWidth, y);
             }
 
-
             // Summary Section
             currentY += 10;
-            decimal droitDeTimbre = _settingsService.GetDroitDuTimbrePriceAsync().Result; // 1% stamp duty (adjust as needed)
+            decimal tvaMargin = _settingsService.GetTVAMarginAsync().Result;
+            decimal droitDeTimbre = _settingsService.GetDroitDuTimbrePriceAsync().Result;
 
-            decimal tva = quotation.TotalPrice - quotation.TotalPriceHT - droitDeTimbre; // Assuming TotalPrice is TTC and TotalPriceHT is HT
-            decimal netAPayer = quotation.TotalPrice;
+            decimal priceWithProfit = totalHTBrut;
+            decimal tvaAmount = priceWithProfit * tvaMargin;
+            decimal netAPayer = priceWithProfit + tvaAmount + droitDeTimbre;
 
-            gfx.DrawString($"TOTAL HT brut: {quotation.TotalPriceHT:F1}", smallFont, blackBrush, new XRect(50 + col1Width + col2Width + col3Width, currentY, col3Width + col4Width, rowHeight), XStringFormats.CenterRight);
+            gfx.DrawString($"TOTAL HT brut: {totalHTBrut:F1}", smallFont, blackBrush, new XRect(50 + col1Width + col2Width + col3Width, currentY, col3Width + col4Width, rowHeight), XStringFormats.CenterRight);
             currentY += rowHeight;
-            gfx.DrawString($"TOTAL TVA: {tva:F1}", smallFont, blackBrush, new XRect(50 + col1Width + col2Width + col3Width, currentY, col3Width + col4Width, rowHeight), XStringFormats.CenterRight);
+            gfx.DrawString($"TOTAL TVA: {tvaAmount:F1}", smallFont, blackBrush, new XRect(50 + col1Width + col2Width + col3Width, currentY, col3Width + col4Width, rowHeight), XStringFormats.CenterRight);
             currentY += rowHeight;
             gfx.DrawString($"Droit de timbre: {droitDeTimbre:F1}", smallFont, blackBrush, new XRect(50 + col1Width + col2Width + col3Width, currentY, col3Width + col4Width, rowHeight), XStringFormats.CenterRight);
             currentY += rowHeight;
             gfx.DrawString($"Net à payer: {netAPayer:F1}", smallFont, blackBrush, new XRect(50 + col1Width + col2Width + col3Width, currentY, col3Width + col4Width, rowHeight), XStringFormats.CenterRight);
 
-            // Footer: Draw the same design at the bottom
+            // Footer
             string footerPath = Path.Combine(Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.Parent.FullName, "Services", "impl", "footer.png");
             if (File.Exists(footerPath))
             {
                 var footer = XImage.FromFile(footerPath);
-
-                // Scale the image by 50% (to reduce it by 50%)
                 double newWidth = footer.Width * 0.57;
                 double newHeight = footer.Height * 0.57;
-
-                // Calculate the X position to center the image horizontally with the resized dimensions
-                double xPosition = (page.Width - newWidth - 25) / 2; // Centers the image based on the new width
-
-                // Set the Y position to place the image at the bottom (with a margin of 10 units from the page bottom)
-                double yPosition = page.Height - newHeight - 10; // Adjust the 10 as needed for margin from the bottom
-
-                // Draw the footer image at the calculated position, with the resized dimensions
+                double xPosition = (page.Width - newWidth - 25) / 2;
+                double yPosition = page.Height - newHeight - 10;
                 gfx.DrawImage(footer, xPosition, yPosition, newWidth, newHeight);
             }
 
-            // Save the PDF to a stream
+            // Save to stream
             using var stream = new MemoryStream();
             document.Save(stream, false);
             return stream.ToArray();
