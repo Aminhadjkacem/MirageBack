@@ -189,17 +189,6 @@ namespace DHP_Manager.Repositories.Impl
 
             await _context.SaveChangesAsync();
         }
-        public async Task<int> GetFactureIdAsync()
-        {
-            var setting = await _context.Settings
-                .FirstOrDefaultAsync(s => s.Key == "FactureId");
-
-            if (setting == null)
-            {
-                throw new KeyNotFoundException("FactureId setting not found.");
-            }
-            return int.Parse(setting.Value);
-        }
 
         public async Task UpdateCompanyRibAsync(string newRib)
         {

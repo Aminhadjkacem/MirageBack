@@ -12,9 +12,6 @@
         Task<string> GetCompanyTelAsync();
         Task UpdateCompanyFiscalAsync(string newFiscal);
         Task<string> GetCompanyFiscalAsync();
-        Task UpdateFactureIdAsync();
-        Task<int> GetFactureIdAsync();
-
         Task UpdateCompanyRibAsync(string companyRib);
         Task UpdateBankNameAsync(string bankName);
         Task<string?> GetBankNameAsync();

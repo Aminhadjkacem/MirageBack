@@ -21,9 +21,9 @@ namespace DHP_Manager.Repositories.Impl
             return await _context.Quotations
                 .Include(q => q.Designations)
                     .ThenInclude(d => d.DesignationProducts)
-                        .ThenInclude(dp => dp.Product) // Include Product for ProductName
-                .Include(q => q.NormalCustomer) // Include NormalCustomer details
-                .Include(q => q.CompanyCustomer) // Include CompanyCustomer details
+                        .ThenInclude(dp => dp.Product)
+                .Include(q => q.NormalCustomer)
+                .Include(q => q.CompanyCustomer)
                 .ToListAsync();
         }
 
@@ -32,6 +32,13 @@ namespace DHP_Manager.Repositories.Impl
             return await _context.Quotations
                 .FirstOrDefaultAsync(q => q.Id == id);
         }
+
+        public async Task<int?> GetFactureIdAsync(int id)
+        {
+            var quotation = await _context.Quotations.FirstOrDefaultAsync(q => q.Id == id);
+            return quotation?.LastInvoiceId;
+        }
+
 
         public async Task UpdateQuotationStatusAsync(int id, QuotationStatus status)
         {
@@ -42,8 +49,31 @@ namespace DHP_Manager.Repositories.Impl
                 throw new KeyNotFoundException($"Quotation with ID {id} not found.");
 
             quotation.Status = status;
+            quotation.InvoiceCreatedAt = DateTime.UtcNow;
+
+            var maxInvoiceId = await _context.Quotations
+                .Where(q => q.LastInvoiceId.HasValue)
+                .MaxAsync(q => (int?)q.LastInvoiceId) ?? 0; // Get max LastInvoiceId or default to 0
+
+            quotation.LastInvoiceId = maxInvoiceId + 1;
+
             await _context.SaveChangesAsync();
         }
+
+        public async Task<int> GetFactureIdAsync()
+        {
+            var maxInvoiceId = await _context.Quotations
+                .Where(q => q.LastInvoiceId.HasValue)
+                .MaxAsync(q => q.LastInvoiceId);
+
+            if (maxInvoiceId == null)
+            {
+                throw new InvalidOperationException("No invoices found.");
+            }
+
+            return maxInvoiceId.Value;
+        }
+
 
         public async Task<List<Quotation>> GetValidatedQuotationsAsync()
         {
@@ -63,8 +93,8 @@ namespace DHP_Manager.Repositories.Impl
                 .Include(q => q.Designations)
                     .ThenInclude(d => d.DesignationProducts)
                         .ThenInclude(dp => dp.Product)
-                .Include(q => q.NormalCustomer) // Include NormalCustomer if present
-                .Include(q => q.CompanyCustomer) // Include CompanyCustomer if present
+                .Include(q => q.NormalCustomer)
+                .Include(q => q.CompanyCustomer)
                 .FirstOrDefaultAsync(q => q.Id == id);
 
             if (quotation == null)
@@ -94,10 +124,8 @@ namespace DHP_Manager.Repositories.Impl
             if (existingQuotation == null)
                 throw new KeyNotFoundException($"Quotation with ID {quotation.Id} not found");
 
-            // Update Quotation properties
             _context.Entry(existingQuotation).CurrentValues.SetValues(quotation);
 
-            // Handle Designations
             if (quotation.Designations != null)
             {
                 foreach (var designationInput in quotation.Designations)
@@ -107,17 +135,14 @@ namespace DHP_Manager.Repositories.Impl
 
                     if (existingDesignation != null)
                     {
-                        // Update existing designation
                         _context.Entry(existingDesignation).CurrentValues.SetValues(designationInput);
                     }
                     else
                     {
-                        // Add new designation
-                        designationInput.QuotationId = quotation.Id; // Ensure FK is set
+                        designationInput.QuotationId = quotation.Id;
                         existingQuotation.Designations.Add(designationInput);
                     }
 
-                    // Handle DesignationProducts
                     if (designationInput.DesignationProducts != null)
                     {
                         var existingProducts = existingDesignation?.DesignationProducts ?? new List<DesignationProduct>();
@@ -140,7 +165,6 @@ namespace DHP_Manager.Repositories.Impl
                             }
                         }
 
-                        // Remove products no longer in input
                         var inputProductIds = designationInput.DesignationProducts.Select(p => p.ProductId).ToList();
                         var productsToRemove = existingProducts
                             .Where(p => !inputProductIds.Contains(p.ProductId))
@@ -152,7 +176,6 @@ namespace DHP_Manager.Repositories.Impl
                     }
                 }
 
-                // Remove designations no longer in input
                 var inputDesignationIds = quotation.Designations.Select(d => d.Id).ToList();
                 var designationsToRemove = existingQuotation.Designations
                     .Where(d => !inputDesignationIds.Contains(d.Id))
@@ -162,6 +185,10 @@ namespace DHP_Manager.Repositories.Impl
                     existingQuotation.Designations.Remove(designation);
                 }
             }
+
+            existingQuotation.LastInvoiceId = quotation.LastInvoiceId;
+            existingQuotation.InvoiceCreatedAt = quotation.InvoiceCreatedAt;
+            existingQuotation.QuotationCreatedAt = quotation.QuotationCreatedAt;
 
             await _context.SaveChangesAsync();
         }

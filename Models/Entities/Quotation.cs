@@ -1,5 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using DHP_Manager.Models.ENUM;
 
 namespace DHP_Manager.Models.Entities
@@ -14,9 +15,6 @@ namespace DHP_Manager.Models.Entities
         public required string ProjectName { get; set; }
 
         [Required]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        [Required]
         public CustomerType CustomerType { get; set; }
 
         [Required]
@@ -24,7 +22,7 @@ namespace DHP_Manager.Models.Entities
 
         [Required]
         public decimal TotalPrice { get; set; } // New field to persist total price
-        
+
         [Required]
         public decimal TotalPriceHT { get; set; } // New field to persist total price hors taxe
 
@@ -38,5 +36,12 @@ namespace DHP_Manager.Models.Entities
 
         // One Quotation -> Many Designations
         public List<Designation> Designations { get; set; } = new();
+
+        // New fields
+        public int? LastInvoiceId { get; set; } // Nullable foreign key for the last invoice
+
+        public DateTime? InvoiceCreatedAt { get; set; } // Nullable date for invoice creation
+
+        public DateTime? QuotationCreatedAt { get; set; } // Nullable date for quotation creation
     }
 }

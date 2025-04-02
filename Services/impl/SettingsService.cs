@@ -67,14 +67,6 @@ namespace DHP_Manager.Services.impl
         {
             return await _settingsRepository.GetCompanyFiscalAsync();
         }
-        public async Task UpdateFactureId()
-        {
-               await _settingsRepository.UpdateFactureIdAsync();
-        }
-        public async Task<int> GetFactureIdAsync()
-        {
-            return await _settingsRepository.GetFactureIdAsync();
-        }
 
         public async Task UpdateCompanyRibAsync(string companyRib)
         {

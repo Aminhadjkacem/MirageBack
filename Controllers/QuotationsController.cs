@@ -63,7 +63,6 @@ namespace DHP_Manager.Controllers
             try
             {
                 await _quotationService.ValidateQuotationAsync(id);
-                await _settingsService.UpdateFactureId();
                 return NoContent();
             }
             catch (KeyNotFoundException ex)

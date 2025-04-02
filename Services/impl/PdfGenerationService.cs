@@ -13,17 +13,20 @@ namespace DHP_Manager.Services.impl
         private readonly IProductService _productService;
         private readonly INormalCustomerService _normalCustomerService;
         private readonly ICompanyCustomerService _companyCustomerService;
+        private readonly IQuotationService _quotationService;
 
         public PdfGenerationService(
             ISettingsService settingsService,
             IProductService productService,
             INormalCustomerService normalCustomerService,
-            ICompanyCustomerService companyCustomerService)
+            ICompanyCustomerService companyCustomerService,
+            IQuotationService quotation)
         {
             _settingsService = settingsService;
             _productService = productService;
             _normalCustomerService = normalCustomerService;
             _companyCustomerService = companyCustomerService;
+            _quotationService = quotation;
         }
 
         public byte[] GenerateQuotationPdf(QuotationUpdateInput quotation)
@@ -53,13 +56,15 @@ namespace DHP_Manager.Services.impl
             }
 
             int currentYear = DateTime.Now.Year;
+            int? factureId = _quotationService.GetFactureIdAsync(quotation.Id).Result;
+            // Create the text for invoice number and quotation ID
 
             // Invoice number and quotation ID
             string invoiceNumberText = $"Facture";
-            string quotationIdText = $"N°: 00{quotation.Id}/{currentYear}";
-            
-            XFont fontInvoiceNumber = new XFont("Arial", 20);
-            XFont fontQuotationId = new XFont("Arial", 10);
+            string quotationIdText = $"N°: 00{factureId}/{currentYear}"; // Quotation ID text
+
+            XFont fontInvoiceNumber = new XFont("Arial", 20); // Larger font for "Facture N°"
+            XFont fontQuotationId = new XFont("Arial", 10); // Larger font for the quotation ID
             var textWidthInvoice = gfx.MeasureString(invoiceNumberText, fontInvoiceNumber).Width;
             var textWidthQuotationId = gfx.MeasureString(quotationIdText, fontQuotationId).Width;
 

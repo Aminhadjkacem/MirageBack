@@ -138,6 +138,7 @@ namespace DHP_Manager.Services.impl
             // Set the calculated total price on the quotation
             quotation.TotalPrice = totalPrice;
             quotation.TotalPriceHT = priceWithProfit;
+            quotation.QuotationCreatedAt = DateTime.UtcNow;
 
             // Save the quotation and its designations in one go
             await _quotationRepository.AddAsync(quotation);
@@ -209,8 +210,104 @@ namespace DHP_Manager.Services.impl
             if (quotationInput == null)
                 throw new ArgumentNullException(nameof(quotationInput));
 
-            var quotationEntity = QuotationUpdateInput.ToEntity(quotationInput);
-            await _quotationRepository.UpdateAsync(quotationEntity);
+            var existingQuotation = await _quotationRepository.GetQuotationWithDesignationsAsync(quotationInput.Id);
+            if (existingQuotation == null)
+                throw new KeyNotFoundException($"Quotation with ID {quotationInput.Id} not found.");
+
+            if (string.IsNullOrWhiteSpace(quotationInput.ProjectName))
+                throw new ArgumentException("Project name cannot be empty", nameof(quotationInput.ProjectName));
+
+            // Check stock availability - convert ProductQuantityUpdateInput to ProductQuantityInput
+            foreach (var designation in quotationInput.Designations)
+            {
+                var productQuantities = designation.Products
+                    .Select(p => new DHP_Manager.Models.Input.ProductQuantityInput
+                    {
+                        ProductId = p.ProductId,
+                        Quantity = p.Quantity
+                    })
+                    .ToList();
+
+                if (!await _productService.VerifyStockAsync(productQuantities, designation.Quantity))
+                    throw new InsufficientStockException($"Not enough stock for one or more products in designation '{designation.Name}'.");
+            }
+
+            // Validate customer exists based on CustomerType
+            if (quotationInput.CustomerType == CustomerType.NORMAL)
+            {
+                var normalCustomer = await _normalCustomerService.GetByIdAsync(quotationInput.CustomerId);
+                if (normalCustomer == null)
+                    throw new KeyNotFoundException($"Normal customer with ID {quotationInput.CustomerId} not found.");
+            }
+            else if (quotationInput.CustomerType == CustomerType.COMPANY)
+            {
+                var companyCustomer = await _companyCustomerService.GetByIdAsync(quotationInput.CustomerId);
+                if (companyCustomer == null)
+                    throw new KeyNotFoundException($"Company customer with ID {quotationInput.CustomerId} not found.");
+            }
+            else
+            {
+                throw new ArgumentException("Invalid CustomerType specified.", nameof(quotationInput.CustomerType));
+            }
+
+            existingQuotation.ProjectName = quotationInput.ProjectName;
+            existingQuotation.CustomerType = quotationInput.CustomerType;
+            existingQuotation.NormalCustomerId = quotationInput.CustomerType == CustomerType.NORMAL ? quotationInput.CustomerId : null;
+            existingQuotation.CompanyCustomerId = quotationInput.CustomerType == CustomerType.COMPANY ? quotationInput.CustomerId : null;
+
+            existingQuotation.Designations.Clear();
+            decimal basePrice = 0m;
+
+            foreach (var designationInput in quotationInput.Designations)
+            {
+                var designation = new Designation
+                {
+                    Name = designationInput.Name,
+                    DesignationProducts = new List<DesignationProduct>(),
+                    Quantity = designationInput.Quantity,
+                };
+
+                var productGroups = designationInput.Products
+                    .GroupBy(p => p.ProductId)
+                    .Select(g => new
+                    {
+                        ProductId = g.Key,
+                        TotalQuantity = g.Sum(p => p.Quantity)
+                    });
+
+                decimal designationTotalPrice = 0m;
+
+                foreach (var productGroup in productGroups)
+                {
+                    var product = await _productService.GetProductByIdAsync(productGroup.ProductId);
+                    if (product == null)
+                        throw new KeyNotFoundException($"Product with ID {productGroup.ProductId} not found.");
+
+                    designation.DesignationProducts.Add(new DesignationProduct
+                    {
+                        ProductId = productGroup.ProductId,
+                        Quantity = productGroup.TotalQuantity
+                    });
+
+                    designationTotalPrice += product.Price * productGroup.TotalQuantity;
+                }
+
+                basePrice += designationTotalPrice * designationInput.Quantity;
+                existingQuotation.Designations.Add(designation);
+            }
+
+            decimal profitMargin = await _settingsService.GetProfitMarginAsync();
+            decimal tvaMargin = await _settingsService.GetTVAMarginAsync();
+            decimal droitDuTimbrePrice = await _settingsService.GetDroitDuTimbrePriceAsync();
+
+            decimal priceWithProfit = basePrice * (1 + profitMargin);
+            decimal priceWithTVA = priceWithProfit * (1 + tvaMargin);
+            decimal totalPrice = priceWithTVA + droitDuTimbrePrice;
+
+            existingQuotation.TotalPrice = totalPrice;
+            existingQuotation.TotalPriceHT = priceWithProfit;
+
+            await _quotationRepository.UpdateAsync(existingQuotation);
         }
 
         public async Task DeleteQuotationAsync(int id)
@@ -243,8 +340,9 @@ namespace DHP_Manager.Services.impl
             {
                 Id = quotation.Id,
                 ProjectName = quotation.ProjectName,
-                CreatedAt = quotation.CreatedAt,
                 CustomerType = quotation.CustomerType,
+                QuotationCreatedAt = quotation.QuotationCreatedAt,
+                InvoiceCreatedAt = quotation.InvoiceCreatedAt,
                 Designations = quotation.Designations.Select(d => new DesignationResponse
                 {
                     Id = d.Id,
@@ -270,6 +368,15 @@ namespace DHP_Manager.Services.impl
             };
 
             return response;
+        }
+
+        public async Task<int> GetFactureIdAsync()
+        {
+            return await _quotationRepository.GetFactureIdAsync();
+        }
+        public async Task<int?> GetFactureIdAsync(int id)
+        {
+            return await _quotationRepository.GetFactureIdAsync(id);
         }
     }
 }
