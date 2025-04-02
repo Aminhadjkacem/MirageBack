@@ -15,5 +15,7 @@ namespace DHP_Manager.Repositories.Interface
         Task UpdateQuotationStatusAsync(int id, QuotationStatus status);
         Task<List<Quotation>> GetValidatedQuotationsAsync();
         Task<IDbContextTransaction> BeginTransactionAsync();
+        Task<int> GetFactureIdAsync();
+        Task<int?> GetFactureIdAsync(int id);
     }
 }

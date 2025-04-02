@@ -75,11 +75,6 @@ namespace DHP_Manager.Data
                 .IsRequired(false) // Optional relationship
                 .OnDelete(DeleteBehavior.Restrict); // Prevent deletion of customer if quotations exist
 
-            // Default values for PostgreSQL
-            modelBuilder.Entity<Quotation>()
-                .Property(q => q.CreatedAt)
-                .HasDefaultValueSql("NOW()"); // PostgreSQL function for current UTC timestamp
-
             modelBuilder.Entity<Designation>()
                 .Property(d => d.CreatedAt)
                 .HasDefaultValueSql("NOW()"); // PostgreSQL function for current UTC timestamp

@@ -9,10 +9,12 @@ namespace DHP_Manager.Services.impl
     public class PdfGenerationService : IPdfGenerationService
     {
         private readonly ISettingsService _settingsService;
+        private readonly IQuotationService _quotationService;
 
-        public PdfGenerationService(ISettingsService settingsService)
+        public PdfGenerationService(ISettingsService settingsService, IQuotationService quotationService)
         {
             _settingsService = settingsService;
+            _quotationService = quotationService;
         }
         public byte[] GenerateQuotationPdf(QuotationUpdateInput quotation)
         {
@@ -41,10 +43,10 @@ namespace DHP_Manager.Services.impl
             }
 
             int currentYear = DateTime.Now.Year;
-
+            int? factureId = _quotationService.GetFactureIdAsync(quotation.Id).Result;
             // Create the text for invoice number and quotation ID
             string invoiceNumberText = $"Facture";
-            string quotationIdText = $"N°: 00{quotation.Id}/{currentYear}"; // Quotation ID text
+            string quotationIdText = $"N°: 00{factureId}/{currentYear}"; // Quotation ID text
 
             XFont fontInvoiceNumber = new XFont("Arial", 20); // Larger font for "Facture N°"
             XFont fontQuotationId = new XFont("Arial", 10); // Larger font for the quotation ID

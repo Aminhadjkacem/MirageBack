@@ -10,10 +10,12 @@ namespace DHP_Manager.Controllers
     public class SettingsController : ControllerBase
     {
         private readonly ISettingsService _settingsService;
+        private readonly IQuotationService _quotationService;
 
-        public SettingsController(ISettingsService settingsService)
+        public SettingsController(ISettingsService settingsService, IQuotationService quotationService)
         {
             _settingsService = settingsService;
+            _quotationService = quotationService;
         }
 
         [HttpGet("all-settings")]
@@ -30,7 +32,7 @@ namespace DHP_Manager.Controllers
                     DroitDuTimbrePrice = await _settingsService.GetDroitDuTimbrePriceAsync(),
                     CompanyTel = await _settingsService.GetCompanyTelAsync(),
                     CompanyFiscal = await _settingsService.GetCompanyFiscalAsync(),
-                    FactureId = await _settingsService.GetFactureIdAsync(),
+                    FactureId = await _quotationService.GetFactureIdAsync(),
                     BankName = await _settingsService.GetBankNameAsync(),
                     BankRib = await _settingsService.GetCompanyRibAsync(),
                 };

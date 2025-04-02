@@ -16,5 +16,7 @@ namespace DHP_Manager.Services.Interface
         Task AddDesignationToQuotationAsync(int quotationId, string designationName);
         Task ValidateQuotationAsync(int id);
         Task<List<QuotationResponse>> GetValidatedQuotationsAsync();
+        Task<int> GetFactureIdAsync();
+        Task<int?> GetFactureIdAsync(int id);
     }
 }
