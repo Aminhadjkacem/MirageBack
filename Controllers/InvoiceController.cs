@@ -10,10 +10,12 @@ namespace DHP_Manager.Controllers
     public class InvoiceController : ControllerBase
     {
         private readonly IPdfGenerationService _pdfService;
+        private readonly IDevisPDFGeneratorService _devisPDFGeneratorService;
 
-        public InvoiceController(IPdfGenerationService pdfService)
+        public InvoiceController(IPdfGenerationService pdfService, IDevisPDFGeneratorService devisPDFGeneratorService)
         {
             _pdfService = pdfService;
+            _devisPDFGeneratorService = devisPDFGeneratorService;
         }
 
         [HttpPost("export-quotation")]
@@ -21,10 +23,21 @@ namespace DHP_Manager.Controllers
         {
             if (quotation == null || !ModelState.IsValid)
             {
-                return BadRequest("Invalid quotation data.");
+                return BadRequest("Invalid Invoice data.");
             }
 
             var pdfBytes = _pdfService.GenerateQuotationPdf(quotation);
+            return File(pdfBytes, "application/pdf", $"Invoice_{quotation.Id}.pdf");
+        }
+        [HttpPost("export-Devis")]
+        public IActionResult ExportDevis([FromBody] QuotationUpdateInput quotation)
+        {
+            if (quotation == null || !ModelState.IsValid)
+            {
+                return BadRequest("Invalid quotation data.");
+            }
+
+            var pdfBytes = _devisPDFGeneratorService.GenerateQuotationPdf(quotation);
             return File(pdfBytes, "application/pdf", $"quotation_{quotation.Id}.pdf");
         }
     }
