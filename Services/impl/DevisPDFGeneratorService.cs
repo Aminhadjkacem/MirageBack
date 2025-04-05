@@ -52,7 +52,7 @@ namespace DHP_Manager.Services.impl
                 }
             }
 
-            int currentYear = DateTime.Now.Year;
+            int currentYear = quotation.QuotationCreatedAt.Value.Year;
 
             // Invoice number and quotation ID
             string invoiceNumberText = $"Devis";
