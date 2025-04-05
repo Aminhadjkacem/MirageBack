@@ -55,16 +55,14 @@ namespace DHP_Manager.Services.impl
                 }
             }
 
-            int currentYear = DateTime.Now.Year;
+            int currentYear = quotation.InvoiceCreatedAt.Value.Year;
             int? factureId = _quotationService.GetFactureIdAsync(quotation.Id).Result;
             // Create the text for invoice number and quotation ID
-
-            // Invoice number and quotation ID
             string invoiceNumberText = $"Facture";
             string quotationIdText = $"N°: 00{factureId}/{currentYear}"; // Quotation ID text
 
             XFont fontInvoiceNumber = new XFont("Arial", 20); // Larger font for "Facture N°"
-            XFont fontQuotationId = new XFont("Arial", 10); // Larger font for the quotation ID
+            XFont fontQuotationId = new XFont("Arial", 10); // Smaller font for the quotation ID
             var textWidthInvoice = gfx.MeasureString(invoiceNumberText, fontInvoiceNumber).Width;
             var textWidthQuotationId = gfx.MeasureString(quotationIdText, fontQuotationId).Width;
 
@@ -87,7 +85,7 @@ namespace DHP_Manager.Services.impl
             string companyFiscal = _settingsService.GetCompanyFiscalAsync().Result;
             string bankName = _settingsService.GetBankNameAsync().Result;
             string companyRIB = _settingsService.GetCompanyRibAsync().Result;
-            string invoiceDate = DateTime.Now.ToString("dd/MM/yyyy");
+            string invoiceDate = quotation.InvoiceCreatedAt.Value.ToString("dd/MM/yyyy");
 
             // Measure company details width
             double telWidth = gfx.MeasureString($"TEL: {companyTel}", smallFont).Width;
@@ -209,6 +207,7 @@ namespace DHP_Manager.Services.impl
 
             // Table Data
             decimal totalHTBrut = 0m;
+            double dataEndY = currentY; // Track the end Y of the data rows
             if (quotation.Designations != null && quotation.Designations.Any())
             {
                 foreach (var designation in quotation.Designations)
@@ -237,35 +236,34 @@ namespace DHP_Manager.Services.impl
 
                     totalHTBrut += designationHT;
 
-                    double offsetX = 18;
+                    double offsetX1 = 18;
                     string unitPriceText = (designationBasePrice * (1 + profitMargin)).ToString("F1");
                     string totalHTText = designationHT.ToString("F1");
 
                     // Draw row
-                    gfx.DrawString(designation.Name, smallFont, blackBrush, new XPoint(50 + offsetX, currentY + rowHeight / 2), XStringFormats.CenterLeft);
-                    gfx.DrawString(designation.Quantity.ToString(), smallFont, blackBrush, new XPoint(50 + col1Width + offsetX, currentY + rowHeight / 2), XStringFormats.Center);
-                    gfx.DrawString(unitPriceText, smallFont, blackBrush, new XPoint(50 + col1Width + col2Width + offsetX, currentY + rowHeight / 2), XStringFormats.Center);
-                    gfx.DrawString(totalHTText, smallFont, blackBrush, new XPoint(50 + col1Width + col2Width + col3Width + offsetX, currentY + rowHeight / 2), XStringFormats.Center);
-                    gfx.DrawString(tvaPercentage, smallFont, blackBrush, new XPoint(50 + col1Width + col2Width + col3Width + col4Width + offsetX, currentY + rowHeight / 2), XStringFormats.Center);
+                    gfx.DrawString(designation.Name, smallFont, blackBrush, new XPoint(50 + offsetX1, currentY + rowHeight / 2), XStringFormats.CenterLeft);
+                    gfx.DrawString(designation.Quantity.ToString(), smallFont, blackBrush, new XPoint(50 + col1Width + offsetX1, currentY + rowHeight / 2), XStringFormats.Center);
+                    gfx.DrawString(unitPriceText, smallFont, blackBrush, new XPoint(50 + col1Width + col2Width + offsetX1, currentY + rowHeight / 2), XStringFormats.Center);
+                    gfx.DrawString(totalHTText, smallFont, blackBrush, new XPoint(50 + col1Width + col2Width + col3Width + offsetX1, currentY + rowHeight / 2), XStringFormats.Center);
+                    gfx.DrawString(tvaPercentage, smallFont, blackBrush, new XPoint(50 + col1Width + col2Width + col3Width + col4Width + offsetX1, currentY + rowHeight / 2), XStringFormats.Center);
                     currentY += rowHeight;
                 }
+                dataEndY = currentY; // Update the end Y of the data rows
             }
 
-            // Table borders
-            double tableEndY = currentY;
-            gfx.DrawRectangle(XPens.Black, 50, tableStartY, tableWidth, tableEndY - tableStartY);
-            gfx.DrawLine(XPens.Black, 50 + col1Width, tableStartY, 50 + col1Width, tableEndY);
-            gfx.DrawLine(XPens.Black, 50 + col1Width + col2Width, tableStartY, 50 + col1Width + col2Width, tableEndY);
-            gfx.DrawLine(XPens.Black, 50 + col1Width + col2Width + col3Width, tableStartY, 50 + col1Width + col2Width + col3Width, tableEndY);
-            gfx.DrawLine(XPens.Black, 50 + col1Width + col2Width + col3Width + col4Width, tableStartY, 50 + col1Width + col2Width + col3Width + col4Width, tableEndY);
+            // Draw borders for the data rows (excluding summary)
+            gfx.DrawRectangle(XPens.Black, 50, tableStartY, tableWidth, dataEndY - tableStartY);
+            gfx.DrawLine(XPens.Black, 50 + col1Width, tableStartY, 50 + col1Width, dataEndY);
+            gfx.DrawLine(XPens.Black, 50 + col1Width + col2Width, tableStartY, 50 + col1Width + col2Width, dataEndY);
+            gfx.DrawLine(XPens.Black, 50 + col1Width + col2Width + col3Width, tableStartY, 50 + col1Width + col2Width + col3Width, dataEndY);
+            gfx.DrawLine(XPens.Black, 50 + col1Width + col2Width + col3Width + col4Width, tableStartY, 50 + col1Width + col2Width + col3Width + col4Width, dataEndY);
 
-            for (double y = tableStartY + rowHeight; y <= tableEndY; y += rowHeight)
+            for (double y = tableStartY + rowHeight; y <= dataEndY; y += rowHeight)
             {
                 gfx.DrawLine(XPens.Black, 50, y, 50 + tableWidth, y);
             }
 
-            // Summary Section
-            currentY += 10;
+            // Add summary rows to the table (using only the last two columns)
             decimal tvaMargin = _settingsService.GetTVAMarginAsync().Result;
             decimal droitDeTimbre = _settingsService.GetDroitDuTimbrePriceAsync().Result;
 
@@ -273,13 +271,43 @@ namespace DHP_Manager.Services.impl
             decimal tvaAmount = priceWithProfit * tvaMargin;
             decimal netAPayer = priceWithProfit + tvaAmount + droitDeTimbre;
 
-            gfx.DrawString($"TOTAL HT brut: {totalHTBrut:F1}", smallFont, blackBrush, new XRect(50 + col1Width + col2Width + col3Width, currentY, col3Width + col4Width, rowHeight), XStringFormats.CenterRight);
+            // Draw summary rows in the last two columns (using the original column widths)
+            double summaryStartX = 50 + col1Width + col2Width + col3Width; // Start at the "Montant H.T" column
+            double summaryWidth = col4Width + col5Width *2; // Total width of the last two columns
+            double offsetX = 10; // Small offset for padding
+
+            // Total HT brut
+            gfx.DrawString("TOTAL HT brut:", smallFont, blackBrush, new XPoint(summaryStartX + offsetX, currentY + rowHeight / 2), XStringFormats.CenterLeft);
+            gfx.DrawString(totalHTBrut.ToString("F1"), smallFont, blackBrush, new XPoint(summaryStartX + col4Width + offsetX, currentY + rowHeight / 2), XStringFormats.CenterLeft);
             currentY += rowHeight;
-            gfx.DrawString($"TOTAL TVA: {tvaAmount:F1}", smallFont, blackBrush, new XRect(50 + col1Width + col2Width + col3Width, currentY, col3Width + col4Width, rowHeight), XStringFormats.CenterRight);
+
+            // Total TVA
+            gfx.DrawString("TOTAL TVA:", smallFont, blackBrush, new XPoint(summaryStartX + offsetX, currentY + rowHeight / 2), XStringFormats.CenterLeft);
+            gfx.DrawString(tvaAmount.ToString("F1"), smallFont, blackBrush, new XPoint(summaryStartX + col4Width + offsetX, currentY + rowHeight / 2), XStringFormats.CenterLeft);
             currentY += rowHeight;
-            gfx.DrawString($"Droit de timbre: {droitDeTimbre:F1}", smallFont, blackBrush, new XRect(50 + col1Width + col2Width + col3Width, currentY, col3Width + col4Width, rowHeight), XStringFormats.CenterRight);
+
+            // Droit de timbre
+            gfx.DrawString("Droit de timbre:", smallFont, blackBrush, new XPoint(summaryStartX + offsetX, currentY + rowHeight / 2), XStringFormats.CenterLeft);
+            gfx.DrawString(droitDeTimbre.ToString("F1"), smallFont, blackBrush, new XPoint(summaryStartX + col4Width + offsetX, currentY + rowHeight / 2), XStringFormats.CenterLeft);
             currentY += rowHeight;
-            gfx.DrawString($"Net à payer: {netAPayer:F1}", smallFont, blackBrush, new XRect(50 + col1Width + col2Width + col3Width, currentY, col3Width + col4Width, rowHeight), XStringFormats.CenterRight);
+
+            // Net à payer
+            gfx.DrawString("Net à payer:", smallFont, blackBrush, new XPoint(summaryStartX + offsetX, currentY + rowHeight / 2), XStringFormats.CenterLeft);
+            gfx.DrawString(netAPayer.ToString("F1"), smallFont, blackBrush, new XPoint(summaryStartX + col4Width + offsetX, currentY + rowHeight / 2), XStringFormats.CenterLeft);
+            currentY += rowHeight;
+
+            // Draw borders for the summary rows (using the original column widths)
+            double summaryEndY = currentY;
+            gfx.DrawRectangle(XPens.Black, summaryStartX, dataEndY, summaryWidth, summaryEndY - dataEndY);
+            gfx.DrawLine(XPens.Black, summaryStartX + col4Width, dataEndY, summaryStartX + col4Width, summaryEndY);
+
+            // Draw horizontal lines for the summary section, starting at dataEndY + rowHeight
+            for (double y = dataEndY + rowHeight; y < summaryEndY; y += rowHeight)
+            {
+                gfx.DrawLine(XPens.Black, summaryStartX, y, summaryStartX + summaryWidth, y);
+            }
+            // Explicitly draw the bottom line at summaryEndY
+            gfx.DrawLine(XPens.Black, summaryStartX, summaryEndY, summaryStartX + summaryWidth, summaryEndY);
 
             // Footer
             string footerPath = Path.Combine(Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.Parent.FullName, "Services", "impl", "footer.png");

@@ -16,6 +16,8 @@ namespace DHP_Manager.Models.input
         public List<DesignationUpdateInput> Designations { get; set; } = new();
         public decimal TotalPrice { get; set; }
         public decimal TotalPriceHT { get; set; }
+        public DateTime? QuotationCreatedAt { get; set; } // Nullable date for quotation creation
+        public DateTime? InvoiceCreatedAt { get; set; } // Nullable date for invoice creation
         public static Quotation ToEntity(QuotationUpdateInput input, Quotation existingQuotation = null)
         {
             if (input == null)
@@ -35,6 +37,8 @@ namespace DHP_Manager.Models.input
                 quotation.NormalCustomerId = input.CustomerId;
                 quotation.TotalPrice = input.TotalPrice;
                 quotation.TotalPriceHT = input.TotalPriceHT;
+                quotation.QuotationCreatedAt = input.QuotationCreatedAt;
+                quotation.InvoiceCreatedAt = input.InvoiceCreatedAt;
                 if (input.Designations != null)
                 {
                     if (existingQuotation == null)
